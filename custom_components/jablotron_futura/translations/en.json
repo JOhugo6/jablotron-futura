@@ -1,0 +1,164 @@
+{
+  "title": "Jablotron Futura Bridge",
+  "config": {
+    "abort": {
+      "already_configured": "This Futura device is already configured."
+    },
+    "error": {
+      "already_configured": "This Futura device is already configured.",
+      "cannot_connect": "Cannot connect to the device.",
+      "invalid_profile": "Profile autodetection was ambiguous or the selected profile does not match the device.",
+      "not_futura_device": "The probed registers do not look like a Jablotron Futura."
+    },
+    "step": {
+      "user": {
+        "title": "Connect to Jablotron Futura",
+        "description": "{commissioning_notice}",
+        "data": {
+          "host": "Host or IP address",
+          "port": "Port",
+          "unit_id": "Unit ID",
+          "profile_mode": "Profile mode",
+          "scan_interval_s": "Polling interval (s)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Jablotron Futura",
+        "description": "{commissioning_notice}",
+        "data": {
+          "host": "Host or IP address",
+          "port": "Port",
+          "unit_id": "Unit ID",
+          "profile_mode": "Profile mode",
+          "scan_interval_s": "Polling interval (s)"
+        }
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "bridge_interval_too_low": "Bridge update interval must be at least 5 seconds.",
+      "stale_after_too_low": "Stale timeout must be at least 10 seconds.",
+      "force_resync_too_low": "Force resync interval must be at least 60 seconds.",
+      "slot_requires_source": "Enabled slot must have at least one source entity.",
+      "invalid_entity_domain": "Selected entity domain is not supported.",
+      "entity_not_found": "Selected entity no longer exists.",
+      "invalid_entity_unit": "Selected entity has incompatible units."
+    },
+    "step": {
+      "global": {
+        "title": "Global bridge settings",
+        "description": "{commissioning_notice}",
+        "data": {
+          "bridge_enabled": "Bridge enabled",
+          "bridge_update_interval_s": "Bridge update interval (s)",
+          "stale_after_s": "Mark source stale after (s)",
+          "write_on_change_only": "Write only on payload change",
+          "force_resync_every_s": "Force resync every (s)",
+          "log_level_bridge": "Bridge log level",
+          "show_commissioning_notice": "Show commissioning notice"
+        }
+      },
+      "slot_1": {
+        "title": "External sensor slot 1",
+        "description": "Configure mapping for slot {slot_index}.",
+        "data": {
+          "enabled": "Enabled",
+          "slot_name": "Slot name",
+          "temperature_entity_id": "Temperature entity",
+          "humidity_entity_id": "Humidity entity",
+          "co2_entity_id": "CO2 entity",
+          "floor_temperature_entity_id": "Floor temperature entity"
+        }
+      },
+      "slot_2": {
+        "title": "External sensor slot 2",
+        "description": "Configure mapping for slot {slot_index}.",
+        "data": {
+          "enabled": "Enabled",
+          "slot_name": "Slot name",
+          "temperature_entity_id": "Temperature entity",
+          "humidity_entity_id": "Humidity entity",
+          "co2_entity_id": "CO2 entity",
+          "floor_temperature_entity_id": "Floor temperature entity"
+        }
+      },
+      "slot_3": {
+        "title": "External sensor slot 3",
+        "description": "Configure mapping for slot {slot_index}.",
+        "data": {
+          "enabled": "Enabled",
+          "slot_name": "Slot name",
+          "temperature_entity_id": "Temperature entity",
+          "humidity_entity_id": "Humidity entity",
+          "co2_entity_id": "CO2 entity",
+          "floor_temperature_entity_id": "Floor temperature entity"
+        }
+      },
+      "slot_4": {
+        "title": "External sensor slot 4",
+        "description": "Configure mapping for slot {slot_index}.",
+        "data": {
+          "enabled": "Enabled",
+          "slot_name": "Slot name",
+          "temperature_entity_id": "Temperature entity",
+          "humidity_entity_id": "Humidity entity",
+          "co2_entity_id": "CO2 entity",
+          "floor_temperature_entity_id": "Floor temperature entity"
+        }
+      },
+      "slot_5": {
+        "title": "External sensor slot 5",
+        "description": "Configure mapping for slot {slot_index}.",
+        "data": {
+          "enabled": "Enabled",
+          "slot_name": "Slot name",
+          "temperature_entity_id": "Temperature entity",
+          "humidity_entity_id": "Humidity entity",
+          "co2_entity_id": "CO2 entity",
+          "floor_temperature_entity_id": "Floor temperature entity"
+        }
+      },
+      "slot_6": {
+        "title": "External sensor slot 6",
+        "description": "Configure mapping for slot {slot_index}.",
+        "data": {
+          "enabled": "Enabled",
+          "slot_name": "Slot name",
+          "temperature_entity_id": "Temperature entity",
+          "humidity_entity_id": "Humidity entity",
+          "co2_entity_id": "CO2 entity",
+          "floor_temperature_entity_id": "Floor temperature entity"
+        }
+      },
+      "slot_7": {
+        "title": "External sensor slot 7",
+        "description": "Configure mapping for slot {slot_index}.",
+        "data": {
+          "enabled": "Enabled",
+          "slot_name": "Slot name",
+          "temperature_entity_id": "Temperature entity",
+          "humidity_entity_id": "Humidity entity",
+          "co2_entity_id": "CO2 entity",
+          "floor_temperature_entity_id": "Floor temperature entity"
+        }
+      },
+      "slot_8": {
+        "title": "External sensor slot 8",
+        "description": "Configure mapping for slot {slot_index}.",
+        "data": {
+          "enabled": "Enabled",
+          "slot_name": "Slot name",
+          "temperature_entity_id": "Temperature entity",
+          "humidity_entity_id": "Humidity entity",
+          "co2_entity_id": "CO2 entity",
+          "floor_temperature_entity_id": "Floor temperature entity"
+        }
+      },
+      "summary": {
+        "title": "Summary",
+        "description": "Enabled slots: {configured_slots}"
+      }
+    }
+  }
+}

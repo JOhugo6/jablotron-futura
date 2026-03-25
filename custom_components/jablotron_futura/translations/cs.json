@@ -1,0 +1,164 @@
+{
+  "title": "Jablotron Futura Bridge",
+  "config": {
+    "abort": {
+      "already_configured": "Tato Futura je uz nakonfigurovana."
+    },
+    "error": {
+      "already_configured": "Tato Futura je uz nakonfigurovana.",
+      "cannot_connect": "K zarizeni se nelze pripojit.",
+      "invalid_profile": "Autodetekce profilu nebyla jednoznacna nebo zvoleny profil neodpovida zarizeni.",
+      "not_futura_device": "Nactene registry nevypadaji jako Jablotron Futura."
+    },
+    "step": {
+      "user": {
+        "title": "Pripojit Jablotron Futura",
+        "description": "{commissioning_notice}",
+        "data": {
+          "host": "Host nebo IP adresa",
+          "port": "Port",
+          "unit_id": "Unit ID",
+          "profile_mode": "Rezim profilu",
+          "scan_interval_s": "Interval cteni (s)"
+        }
+      },
+      "reconfigure": {
+        "title": "Zmenit nastaveni Jablotron Futura",
+        "description": "{commissioning_notice}",
+        "data": {
+          "host": "Host nebo IP adresa",
+          "port": "Port",
+          "unit_id": "Unit ID",
+          "profile_mode": "Rezim profilu",
+          "scan_interval_s": "Interval cteni (s)"
+        }
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "bridge_interval_too_low": "Interval bridge zapisu musi byt alespon 5 sekund.",
+      "stale_after_too_low": "Timeout zastaralosti musi byt alespon 10 sekund.",
+      "force_resync_too_low": "Interval vynucene synchronizace musi byt alespon 60 sekund.",
+      "slot_requires_source": "Zapnuty slot musi mit alespon jednu zdrojovou entitu.",
+      "invalid_entity_domain": "Zvolena domena entity neni podporovana.",
+      "entity_not_found": "Zvolena entita uz neexistuje.",
+      "invalid_entity_unit": "Zvolena entita ma nekompatibilni jednotky."
+    },
+    "step": {
+      "global": {
+        "title": "Globalni bridge nastaveni",
+        "description": "{commissioning_notice}",
+        "data": {
+          "bridge_enabled": "Bridge zapnuty",
+          "bridge_update_interval_s": "Interval bridge zapisu (s)",
+          "stale_after_s": "Oznacit zdroj jako zastaraly po (s)",
+          "write_on_change_only": "Zapisovat jen pri zmene payloadu",
+          "force_resync_every_s": "Vynutit synchronizaci po (s)",
+          "log_level_bridge": "Uroven bridge logu",
+          "show_commissioning_notice": "Zobrazit commissioning upozorneni"
+        }
+      },
+      "slot_1": {
+        "title": "Slot externiho senzoru 1",
+        "description": "Nastav mapovani pro slot {slot_index}.",
+        "data": {
+          "enabled": "Zapnuto",
+          "slot_name": "Nazev slotu",
+          "temperature_entity_id": "Entita teploty",
+          "humidity_entity_id": "Entita vlhkosti",
+          "co2_entity_id": "Entita CO2",
+          "floor_temperature_entity_id": "Entita teploty podlahy"
+        }
+      },
+      "slot_2": {
+        "title": "Slot externiho senzoru 2",
+        "description": "Nastav mapovani pro slot {slot_index}.",
+        "data": {
+          "enabled": "Zapnuto",
+          "slot_name": "Nazev slotu",
+          "temperature_entity_id": "Entita teploty",
+          "humidity_entity_id": "Entita vlhkosti",
+          "co2_entity_id": "Entita CO2",
+          "floor_temperature_entity_id": "Entita teploty podlahy"
+        }
+      },
+      "slot_3": {
+        "title": "Slot externiho senzoru 3",
+        "description": "Nastav mapovani pro slot {slot_index}.",
+        "data": {
+          "enabled": "Zapnuto",
+          "slot_name": "Nazev slotu",
+          "temperature_entity_id": "Entita teploty",
+          "humidity_entity_id": "Entita vlhkosti",
+          "co2_entity_id": "Entita CO2",
+          "floor_temperature_entity_id": "Entita teploty podlahy"
+        }
+      },
+      "slot_4": {
+        "title": "Slot externiho senzoru 4",
+        "description": "Nastav mapovani pro slot {slot_index}.",
+        "data": {
+          "enabled": "Zapnuto",
+          "slot_name": "Nazev slotu",
+          "temperature_entity_id": "Entita teploty",
+          "humidity_entity_id": "Entita vlhkosti",
+          "co2_entity_id": "Entita CO2",
+          "floor_temperature_entity_id": "Entita teploty podlahy"
+        }
+      },
+      "slot_5": {
+        "title": "Slot externiho senzoru 5",
+        "description": "Nastav mapovani pro slot {slot_index}.",
+        "data": {
+          "enabled": "Zapnuto",
+          "slot_name": "Nazev slotu",
+          "temperature_entity_id": "Entita teploty",
+          "humidity_entity_id": "Entita vlhkosti",
+          "co2_entity_id": "Entita CO2",
+          "floor_temperature_entity_id": "Entita teploty podlahy"
+        }
+      },
+      "slot_6": {
+        "title": "Slot externiho senzoru 6",
+        "description": "Nastav mapovani pro slot {slot_index}.",
+        "data": {
+          "enabled": "Zapnuto",
+          "slot_name": "Nazev slotu",
+          "temperature_entity_id": "Entita teploty",
+          "humidity_entity_id": "Entita vlhkosti",
+          "co2_entity_id": "Entita CO2",
+          "floor_temperature_entity_id": "Entita teploty podlahy"
+        }
+      },
+      "slot_7": {
+        "title": "Slot externiho senzoru 7",
+        "description": "Nastav mapovani pro slot {slot_index}.",
+        "data": {
+          "enabled": "Zapnuto",
+          "slot_name": "Nazev slotu",
+          "temperature_entity_id": "Entita teploty",
+          "humidity_entity_id": "Entita vlhkosti",
+          "co2_entity_id": "Entita CO2",
+          "floor_temperature_entity_id": "Entita teploty podlahy"
+        }
+      },
+      "slot_8": {
+        "title": "Slot externiho senzoru 8",
+        "description": "Nastav mapovani pro slot {slot_index}.",
+        "data": {
+          "enabled": "Zapnuto",
+          "slot_name": "Nazev slotu",
+          "temperature_entity_id": "Entita teploty",
+          "humidity_entity_id": "Entita vlhkosti",
+          "co2_entity_id": "Entita CO2",
+          "floor_temperature_entity_id": "Entita teploty podlahy"
+        }
+      },
+      "summary": {
+        "title": "Souhrn",
+        "description": "Zapnute sloty: {configured_slots}"
+      }
+    }
+  }
+}
