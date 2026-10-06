@@ -2,163 +2,715 @@
   "title": "Jablotron Futura Bridge",
   "config": {
     "abort": {
-      "already_configured": "This Futura device is already configured."
+      "already_configured": "This Futura device is already configured.",
+      "cancelled": "Setup cancelled.",
+      "reconfigure_successful": "Configuration saved.",
+      "reconfigure_started": "Reconfiguration started. Open the integration entry to continue.",
+      "reconfigure_required": "Open the integration entry menu and choose Reconfigure."
     },
     "error": {
       "already_configured": "This Futura device is already configured.",
       "cannot_connect": "Cannot connect to the device.",
+      "cannot_read_identity": "The device identity could not be read reliably.",
+      "entity_not_found": "Selected entity no longer exists.",
+      "external_buttons_require_detected_zone": "External buttons can only be enabled when at least one enabled exhaust zone has detected buttons.",
+      "external_buttons_require_enabled_button": "At least one detected button must be exposed when external buttons are enabled.",
+      "button_active_seconds_too_high": "Button active time exceeds the supported maximum.",
+      "button_active_seconds_too_low": "Button active time must be at least 1 second.",
+      "invalid_button_mode": "Selected button mode is not supported.",
+      "invalid_entity_domain": "Selected entity domain is not supported.",
+      "invalid_entity_unit": "Selected entity has incompatible units.",
       "invalid_profile": "Profile autodetection was ambiguous or the selected profile does not match the device.",
-      "not_futura_device": "The probed registers do not look like a Jablotron Futura."
+      "no_alfa_detected": "At least one ALFA controller must be detected for the selected zones.",
+      "no_zones_selected": "At least one detected zone must be enabled.",
+      "not_futura_device": "The probed registers do not look like a Jablotron Futura.",
+      "topology_drift_requires_confirmation": "Confirm the detected topology change before continuing.",
+      "too_many_external_buttons": "Detected topology exceeds the MVP limit of two buttons per zone.",
+      "too_many_exhaust_dampers": "Detected topology exceeds the MVP limit of four exhaust dampers per zone.",
+      "too_many_supply_dampers": "Detected topology exceeds the MVP limit of four supply dampers per zone.",
+      "read_interval_too_low": "Read interval must be at least 1000 ms.",
+      "write_interval_too_low": "Write interval must be at least 5000 ms.",
+      "writeback_entities_required": "Select at least one source.",
+      "writeback_requires_supply_zone": "HA write-back requires at least one enabled supply zone.",
+      "variobreeze_not_detected": "VarioBreeze is not detected by the device. Are you sure?",
+      "variobreeze_detected_but_disabled": "VarioBreeze is detected. Disabling zone ventilation will create a single-zone config.",
+      "invalid_value": "Enter a valid value.",
+      "identity_mismatch": "This is a different device. The saved configuration was not changed.",
+      "unitless_confirmation_required": "No compatible unit metadata is available. Explicitly confirm the target unit for this source.",
+      "invalid_source_value": "The source must be a finite number within the supported range.",
+      "timer_exceeds_maximum": "Default duration exceeds the configured maximum.",
+      "confirmation_required": "Confirm before continuing.",
+      "invalid_configuration": "Some configuration is invalid. Review the slot details and intervals.",
+      "save_failed": "Saving failed. The previous configuration remains active.",
+      "transition_failed": "The new configuration was saved, but unloading failed. Writes remain blocked; reload or restart the integration.",
+      "slot_not_free": "Choose an unused destination slot.",
+      "repair_use_editor": "This value cannot be restored as a whole slot. Preserve the archive and correct it in the appropriate editor.",
+      "invalid_interval": "Enter an integer within the displayed limits.",
+      "invalid_boolean": "Choose enabled or disabled.",
+      "invalid_log_level": "Choose normal or debug logging.",
+      "watchdog_too_short": "Watchdog must not be shorter than the write interval.",
+      "repair_kind_mismatch": "Restore this choice only into a slot of the same kind."
     },
     "step": {
-      "user": {
-        "title": "Connect to Jablotron Futura",
-        "description": "{commissioning_notice}",
+      "setup_warning": {
+        "title": "Setup choice differs from detection",
+        "description": "Your VarioBreeze choice differs from the detected support. You may continue with either path. Existing source mappings and physical bindings remain unchanged.",
         "data": {
-          "host": "Host or IP address",
-          "port": "Port",
-          "unit_id": "Unit ID",
-          "profile_mode": "Profile mode",
-          "scan_interval_s": "Polling interval (s)"
+          "action": "Next action"
         }
       },
-      "reconfigure": {
-        "title": "Reconfigure Jablotron Futura",
-        "description": "{commissioning_notice}",
+      "connection": {
+        "title": "Connection",
+        "description": "Connect to a commissioned Futura L/M/S. L+ is unsupported. The probe only reads; no values are written.",
         "data": {
           "host": "Host or IP address",
           "port": "Port",
-          "unit_id": "Unit ID",
-          "profile_mode": "Profile mode",
-          "scan_interval_s": "Polling interval (s)"
+          "unit_id": "Modbus unit ID",
+          "profile_mode": "Device profile",
+          "action": "Next action"
+        }
+      },
+      "device_info": {
+        "title": "Verified unit",
+        "description": "{identity}\n\nDetected VarioBreeze support: **{detected}**. Support is not proof of physical installation. Choose either setup path; both include all sensor and button slots. A different choice does not overwrite saved mappings. Firmware is read-only information; this integration does not provide firmware updates.\n\n**Detected topology changes (saved mappings remain unchanged)**\n{topology_changes}",
+        "data": {
+          "variobreeze": "Use zone setup (VarioBreeze)",
+          "action": "Next action"
+        }
+      },
+      "zones": {
+        "title": "Zones · 8 supply + 8 exhaust",
+        "description": "Select a zone to edit its name and area. Physical damper/ALFA bindings are preserved. Zones organize the UI; slot numbers determine the meaning in Futura.\n\n{zones}",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "zone_detail": {
+        "title": "Zone",
+        "description": "**{zone}**\n\nDetected physical bindings: {topology}",
+        "data": {
+          "name": "Name",
+          "enabled": "Slot / zone enabled",
+          "area_id": "Home Assistant area",
+          "damper_1": "Damper 1 name",
+          "damper_2": "Damper 2 name",
+          "damper_3": "Damper 3 name",
+          "damper_4": "Damper 4 name",
+          "action": "Next action"
+        }
+      },
+      "zone_disabled": {
+        "title": "Associated slots",
+        "description": "This zone has associated slots. Keep them without a zone or disable them while retaining their sources.",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "preview": {
+        "title": "Measurement preview",
+        "description": "**ALFA (separate input measurements)**\n{alfa}\n\n**External holding slots**\n{readings}\n\nOnly enabled Read/HA slots are read. To inspect a new slot, choose Read in its detail. Readback does not prove an effect on ventilation.",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "sensor_slots": {
+        "title": "Sensors · 8 independent slots",
+        "description": "Choose a slot to edit. None does not read or write. Read observes Futura. HA Write-back sends selected Home Assistant values and reads them back. You can continue without configuring any slot.\n\n{slots}",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "sensor_detail": {
+        "title": "Sensor · slot {slot}",
+        "description": "Zone binding is optional and only organizes the UI. It does not change the register address or physical zone. Disabled/None preserves saved sources.",
+        "data": {
+          "name": "Name",
+          "enabled": "Slot / zone enabled",
+          "mode": "Sensor mode",
+          "zone_binding": "Zone (optional)",
+          "action": "Next action"
+        }
+      },
+      "sensor_sources": {
+        "title": "HA sources · slot {slot}",
+        "description": "Select at least one source. All four metrics use the same unit validation, including floor temperature. Confirm a target unit only for a source without units. Another writer may overwrite these values; do not run another writing client concurrently. IN1/IN2 and unit regulation may override the effect.",
+        "data": {
+          "temperature_entity_id": "Temperature",
+          "temperature_unitless": "For a unitless temperature source, assume °C",
+          "humidity_entity_id": "Relative humidity",
+          "humidity_unitless": "For a unitless relative humidity source, assume %",
+          "co2_entity_id": "CO₂",
+          "co2_unitless": "For a unitless co₂ source, assume ppm",
+          "floor_temperature_entity_id": "Floor temperature",
+          "floor_temperature_unitless": "For a unitless floor temperature source, assume °C",
+          "action": "Next action"
+        }
+      },
+      "sensor_readback": {
+        "title": "Sensor readback · slot {slot}",
+        "description": "{readings}\n\nValues read from Futura holding registers. An absent or invalid metric is unavailable, not zero. Continue keeps this draft without writing.",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "button_slots": {
+        "title": "Buttons · 8 independent slots",
+        "description": "None does not read or write. Futura reads a button controlled elsewhere. HA Control creates a button and service, even without a physical button.\n\n{slots}",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "button_detail": {
+        "title": "Button · slot {slot}",
+        "description": "The optional zone binding is organizational only. Choosing HA Control explicitly selects Home Assistant control. Do not use a second writer for the same slot.",
+        "data": {
+          "name": "Name",
+          "enabled": "Slot / zone enabled",
+          "ownership": "Button mode",
+          "zone_binding": "Zone (optional)",
+          "action": "Next action"
+        }
+      },
+      "button_action": {
+        "title": "Action · slot {slot}",
+        "description": "Choose the action. Switching action proposes Boost 180 s or Digestor 300 s; adjust the timer in the next step.",
+        "data": {
+          "button_mode": "Action type",
+          "action": "Next action"
+        }
+      },
+      "button_timer": {
+        "title": "Timer · slot {slot}",
+        "description": "Default duration must not exceed the configured maximum (1–10800 s). A command is not replayed after an outage. Acknowledged transfer does not prove ventilation started. Recovery is only for a previously failed deactivation: after saving, attempt one cleanup before enabling another press.",
+        "data": {
+          "default_timer_seconds": "Default duration (s)",
+          "max_active_seconds": "Maximum duration (s)",
+          "recover_cleanup": "Retry failed deactivation after saving",
+          "action": "Next action"
+        }
+      },
+      "button_readback": {
+        "title": "Button readback · slot {slot}",
+        "description": "{readings}\n\nFutura mode is read-only. The timer is an observed value, not a control.",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "runtime": {
+        "title": "Intervals and bridge",
+        "description": "Bridge enables sensor writes only; buttons are independent. Readback and standard polling have separate intervals. Watchdog must be at least the write interval rounded up to seconds.",
+        "data": {
+          "bridge_enabled": "Enable sensor write-back",
+          "write_on_change_only": "Write only changed values (except watchdog)",
+          "read_interval_ms": "Readback interval (ms)",
+          "write_interval_ms": "Minimum write interval (ms)",
+          "scan_interval_s": "Standard polling interval (s)",
+          "stale_after_s": "Source expires after (s)",
+          "force_resync_every_s": "Watchdog refresh (s)",
+          "log_level_bridge": "Logging",
+          "action": "Next action"
+        }
+      },
+      "repair": {
+        "title": "Resolve migration",
+        "description": "**{conflict_title} · {item}**\n{details}\n\n{explanation}\n\nWrites stay blocked until the complete configuration is confirmed and saved. Original settings remain in the migration archive for support.",
+        "data": {
+          "target_kind": "Restore as",
+          "target_slot": "Free destination slot",
+          "confirm_resolution": "Confirm this resolution / current defaults",
+          "action": "Next action"
+        }
+      },
+      "summary": {
+        "title": "Review and save",
+        "description": "{summary}\n\n**Changes**\n{diff}\n\nDetails have changed only the draft. Confirming save verifies device identity again, then saves and deactivates previous HA ownership as needed. Failed deactivation is reported; it cannot be guaranteed during an outage.",
+        "data": {
+          "confirm_save": "Confirm saving this configuration",
+          "action": "Next action"
+        }
+      },
+      "init": {
+        "title": "Futura options",
+        "description": "Edit names, areas, timers and intervals. Use full configuration for connection, topology, modes or source mappings.",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "full_configuration": {
+        "title": "Full configuration",
+        "description": "Open [Futura integration](/config/integrations/integration/jablotron_futura), then choose Reconfigure from the entry menu. Close this options dialog before starting the full flow.",
+        "data": {
+          "action": "Next action"
         }
       }
     }
   },
   "options": {
-    "error": {
-      "bridge_interval_too_low": "Bridge update interval must be at least 5 seconds.",
-      "stale_after_too_low": "Stale timeout must be at least 10 seconds.",
-      "force_resync_too_low": "Force resync interval must be at least 60 seconds.",
-      "slot_requires_source": "Enabled slot must have at least one source entity.",
-      "invalid_entity_domain": "Selected entity domain is not supported.",
-      "entity_not_found": "Selected entity no longer exists.",
-      "invalid_entity_unit": "Selected entity has incompatible units."
-    },
     "step": {
-      "global": {
-        "title": "Global bridge settings",
-        "description": "{commissioning_notice}",
+      "setup_warning": {
+        "title": "Setup choice differs from detection",
+        "description": "Your VarioBreeze choice differs from the detected support. You may continue with either path. Existing source mappings and physical bindings remain unchanged.",
         "data": {
-          "bridge_enabled": "Bridge enabled",
-          "bridge_update_interval_s": "Bridge update interval (s)",
-          "stale_after_s": "Mark source stale after (s)",
-          "write_on_change_only": "Write only on payload change",
-          "force_resync_every_s": "Force resync every (s)",
-          "log_level_bridge": "Bridge log level",
-          "show_commissioning_notice": "Show commissioning notice"
+          "action": "Next action"
         }
       },
-      "slot_1": {
-        "title": "External sensor slot 1",
-        "description": "Configure mapping for slot {slot_index}.",
+      "connection": {
+        "title": "Connection",
+        "description": "Connect to a commissioned Futura L/M/S. L+ is unsupported. The probe only reads; no values are written.",
         "data": {
-          "enabled": "Enabled",
-          "slot_name": "Slot name",
-          "temperature_entity_id": "Temperature entity",
-          "humidity_entity_id": "Humidity entity",
-          "co2_entity_id": "CO2 entity",
-          "floor_temperature_entity_id": "Floor temperature entity"
+          "host": "Host or IP address",
+          "port": "Port",
+          "unit_id": "Modbus unit ID",
+          "profile_mode": "Device profile",
+          "action": "Next action"
         }
       },
-      "slot_2": {
-        "title": "External sensor slot 2",
-        "description": "Configure mapping for slot {slot_index}.",
+      "device_info": {
+        "title": "Verified unit",
+        "description": "{identity}\n\nDetected VarioBreeze support: **{detected}**. Support is not proof of physical installation. Choose either setup path; both include all sensor and button slots. A different choice does not overwrite saved mappings. Firmware is read-only information; this integration does not provide firmware updates.\n\n**Detected topology changes (saved mappings remain unchanged)**\n{topology_changes}",
         "data": {
-          "enabled": "Enabled",
-          "slot_name": "Slot name",
-          "temperature_entity_id": "Temperature entity",
-          "humidity_entity_id": "Humidity entity",
-          "co2_entity_id": "CO2 entity",
-          "floor_temperature_entity_id": "Floor temperature entity"
+          "variobreeze": "Use zone setup (VarioBreeze)",
+          "action": "Next action"
         }
       },
-      "slot_3": {
-        "title": "External sensor slot 3",
-        "description": "Configure mapping for slot {slot_index}.",
+      "zones": {
+        "title": "Zones · 8 supply + 8 exhaust",
+        "description": "Select a zone to edit its name and area. Physical damper/ALFA bindings are preserved. Zones organize the UI; slot numbers determine the meaning in Futura.\n\n{zones}",
         "data": {
-          "enabled": "Enabled",
-          "slot_name": "Slot name",
-          "temperature_entity_id": "Temperature entity",
-          "humidity_entity_id": "Humidity entity",
-          "co2_entity_id": "CO2 entity",
-          "floor_temperature_entity_id": "Floor temperature entity"
+          "action": "Next action"
         }
       },
-      "slot_4": {
-        "title": "External sensor slot 4",
-        "description": "Configure mapping for slot {slot_index}.",
+      "zone_detail": {
+        "title": "Zone",
+        "description": "**{zone}**\n\nDetected physical bindings: {topology}",
         "data": {
-          "enabled": "Enabled",
-          "slot_name": "Slot name",
-          "temperature_entity_id": "Temperature entity",
-          "humidity_entity_id": "Humidity entity",
-          "co2_entity_id": "CO2 entity",
-          "floor_temperature_entity_id": "Floor temperature entity"
+          "name": "Name",
+          "enabled": "Slot / zone enabled",
+          "area_id": "Home Assistant area",
+          "damper_1": "Damper 1 name",
+          "damper_2": "Damper 2 name",
+          "damper_3": "Damper 3 name",
+          "damper_4": "Damper 4 name",
+          "action": "Next action"
         }
       },
-      "slot_5": {
-        "title": "External sensor slot 5",
-        "description": "Configure mapping for slot {slot_index}.",
+      "zone_disabled": {
+        "title": "Associated slots",
+        "description": "This zone has associated slots. Keep them without a zone or disable them while retaining their sources.",
         "data": {
-          "enabled": "Enabled",
-          "slot_name": "Slot name",
-          "temperature_entity_id": "Temperature entity",
-          "humidity_entity_id": "Humidity entity",
-          "co2_entity_id": "CO2 entity",
-          "floor_temperature_entity_id": "Floor temperature entity"
+          "action": "Next action"
         }
       },
-      "slot_6": {
-        "title": "External sensor slot 6",
-        "description": "Configure mapping for slot {slot_index}.",
+      "preview": {
+        "title": "Measurement preview",
+        "description": "**ALFA (separate input measurements)**\n{alfa}\n\n**External holding slots**\n{readings}\n\nOnly enabled Read/HA slots are read. To inspect a new slot, choose Read in its detail. Readback does not prove an effect on ventilation.",
         "data": {
-          "enabled": "Enabled",
-          "slot_name": "Slot name",
-          "temperature_entity_id": "Temperature entity",
-          "humidity_entity_id": "Humidity entity",
-          "co2_entity_id": "CO2 entity",
-          "floor_temperature_entity_id": "Floor temperature entity"
+          "action": "Next action"
         }
       },
-      "slot_7": {
-        "title": "External sensor slot 7",
-        "description": "Configure mapping for slot {slot_index}.",
+      "sensor_slots": {
+        "title": "Sensors · 8 independent slots",
+        "description": "Choose a slot to edit. None does not read or write. Read observes Futura. HA Write-back sends selected Home Assistant values and reads them back. You can continue without configuring any slot.\n\n{slots}",
         "data": {
-          "enabled": "Enabled",
-          "slot_name": "Slot name",
-          "temperature_entity_id": "Temperature entity",
-          "humidity_entity_id": "Humidity entity",
-          "co2_entity_id": "CO2 entity",
-          "floor_temperature_entity_id": "Floor temperature entity"
+          "action": "Next action"
         }
       },
-      "slot_8": {
-        "title": "External sensor slot 8",
-        "description": "Configure mapping for slot {slot_index}.",
+      "sensor_detail": {
+        "title": "Sensor · slot {slot}",
+        "description": "Zone binding is optional and only organizes the UI. It does not change the register address or physical zone. Disabled/None preserves saved sources.",
         "data": {
-          "enabled": "Enabled",
-          "slot_name": "Slot name",
-          "temperature_entity_id": "Temperature entity",
-          "humidity_entity_id": "Humidity entity",
-          "co2_entity_id": "CO2 entity",
-          "floor_temperature_entity_id": "Floor temperature entity"
+          "name": "Name",
+          "enabled": "Slot / zone enabled",
+          "mode": "Sensor mode",
+          "zone_binding": "Zone (optional)",
+          "action": "Next action"
+        }
+      },
+      "sensor_sources": {
+        "title": "HA sources · slot {slot}",
+        "description": "Select at least one source. All four metrics use the same unit validation, including floor temperature. Confirm a target unit only for a source without units. Another writer may overwrite these values; do not run another writing client concurrently. IN1/IN2 and unit regulation may override the effect.",
+        "data": {
+          "temperature_entity_id": "Temperature",
+          "temperature_unitless": "For a unitless temperature source, assume °C",
+          "humidity_entity_id": "Relative humidity",
+          "humidity_unitless": "For a unitless relative humidity source, assume %",
+          "co2_entity_id": "CO₂",
+          "co2_unitless": "For a unitless co₂ source, assume ppm",
+          "floor_temperature_entity_id": "Floor temperature",
+          "floor_temperature_unitless": "For a unitless floor temperature source, assume °C",
+          "action": "Next action"
+        }
+      },
+      "sensor_readback": {
+        "title": "Sensor readback · slot {slot}",
+        "description": "{readings}\n\nValues read from Futura holding registers. An absent or invalid metric is unavailable, not zero. Continue keeps this draft without writing.",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "button_slots": {
+        "title": "Buttons · 8 independent slots",
+        "description": "None does not read or write. Futura reads a button controlled elsewhere. HA Control creates a button and service, even without a physical button.\n\n{slots}",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "button_detail": {
+        "title": "Button · slot {slot}",
+        "description": "The optional zone binding is organizational only. Choosing HA Control explicitly selects Home Assistant control. Do not use a second writer for the same slot.",
+        "data": {
+          "name": "Name",
+          "enabled": "Slot / zone enabled",
+          "ownership": "Button mode",
+          "zone_binding": "Zone (optional)",
+          "action": "Next action"
+        }
+      },
+      "button_action": {
+        "title": "Action · slot {slot}",
+        "description": "Choose the action. Switching action proposes Boost 180 s or Digestor 300 s; adjust the timer in the next step.",
+        "data": {
+          "button_mode": "Action type",
+          "action": "Next action"
+        }
+      },
+      "button_timer": {
+        "title": "Timer · slot {slot}",
+        "description": "Default duration must not exceed the configured maximum (1–10800 s). A command is not replayed after an outage. Acknowledged transfer does not prove ventilation started. Recovery is only for a previously failed deactivation: after saving, attempt one cleanup before enabling another press.",
+        "data": {
+          "default_timer_seconds": "Default duration (s)",
+          "max_active_seconds": "Maximum duration (s)",
+          "recover_cleanup": "Retry failed deactivation after saving",
+          "action": "Next action"
+        }
+      },
+      "button_readback": {
+        "title": "Button readback · slot {slot}",
+        "description": "{readings}\n\nFutura mode is read-only. The timer is an observed value, not a control.",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "runtime": {
+        "title": "Intervals and bridge",
+        "description": "Bridge enables sensor writes only; buttons are independent. Readback and standard polling have separate intervals. Watchdog must be at least the write interval rounded up to seconds.",
+        "data": {
+          "bridge_enabled": "Enable sensor write-back",
+          "write_on_change_only": "Write only changed values (except watchdog)",
+          "read_interval_ms": "Readback interval (ms)",
+          "write_interval_ms": "Minimum write interval (ms)",
+          "scan_interval_s": "Standard polling interval (s)",
+          "stale_after_s": "Source expires after (s)",
+          "force_resync_every_s": "Watchdog refresh (s)",
+          "log_level_bridge": "Logging",
+          "action": "Next action"
+        }
+      },
+      "repair": {
+        "title": "Resolve migration",
+        "description": "**{conflict_title} · {item}**\n{details}\n\n{explanation}\n\nWrites stay blocked until the complete configuration is confirmed and saved. Original settings remain in the migration archive for support.",
+        "data": {
+          "target_kind": "Restore as",
+          "target_slot": "Free destination slot",
+          "confirm_resolution": "Confirm this resolution / current defaults",
+          "action": "Next action"
         }
       },
       "summary": {
-        "title": "Summary",
-        "description": "Enabled slots: {configured_slots}"
+        "title": "Review and save",
+        "description": "{summary}\n\n**Changes**\n{diff}\n\nDetails have changed only the draft. Confirming save verifies device identity again, then saves and deactivates previous HA ownership as needed. Failed deactivation is reported; it cannot be guaranteed during an outage.",
+        "data": {
+          "confirm_save": "Confirm saving this configuration",
+          "action": "Next action"
+        }
+      },
+      "init": {
+        "title": "Futura options",
+        "description": "Edit names, areas, timers and intervals. Use full configuration for connection, topology, modes or source mappings.",
+        "data": {
+          "action": "Next action"
+        }
+      },
+      "full_configuration": {
+        "title": "Full configuration",
+        "description": "Open [Futura integration](/config/integrations/integration/jablotron_futura), then choose Reconfigure from the entry menu. Close this options dialog before starting the full flow.",
+        "data": {
+          "action": "Next action"
+        }
       }
+    },
+    "error": {
+      "already_configured": "This Futura device is already configured.",
+      "cannot_connect": "Cannot connect to the device.",
+      "cannot_read_identity": "The device identity could not be read reliably.",
+      "entity_not_found": "Selected entity no longer exists.",
+      "external_buttons_require_detected_zone": "External buttons can only be enabled when at least one enabled exhaust zone has detected buttons.",
+      "external_buttons_require_enabled_button": "At least one detected button must be exposed when external buttons are enabled.",
+      "button_active_seconds_too_high": "Button active time exceeds the supported maximum.",
+      "button_active_seconds_too_low": "Button active time must be at least 1 second.",
+      "invalid_button_mode": "Selected button mode is not supported.",
+      "invalid_entity_domain": "Selected entity domain is not supported.",
+      "invalid_entity_unit": "Selected entity has incompatible units.",
+      "invalid_profile": "Profile autodetection was ambiguous or the selected profile does not match the device.",
+      "no_alfa_detected": "At least one ALFA controller must be detected for the selected zones.",
+      "no_zones_selected": "At least one detected zone must be enabled.",
+      "not_futura_device": "The probed registers do not look like a Jablotron Futura.",
+      "topology_drift_requires_confirmation": "Confirm the detected topology change before continuing.",
+      "too_many_external_buttons": "Detected topology exceeds the MVP limit of two buttons per zone.",
+      "too_many_exhaust_dampers": "Detected topology exceeds the MVP limit of four exhaust dampers per zone.",
+      "too_many_supply_dampers": "Detected topology exceeds the MVP limit of four supply dampers per zone.",
+      "read_interval_too_low": "Read interval must be at least 1000 ms.",
+      "write_interval_too_low": "Write interval must be at least 5000 ms.",
+      "writeback_entities_required": "Select at least one source.",
+      "writeback_requires_supply_zone": "HA write-back requires at least one enabled supply zone.",
+      "variobreeze_not_detected": "VarioBreeze is not detected by the device. Are you sure?",
+      "variobreeze_detected_but_disabled": "VarioBreeze is detected. Disabling zone ventilation will create a single-zone config.",
+      "invalid_value": "Enter a valid value.",
+      "identity_mismatch": "This is a different device. The saved configuration was not changed.",
+      "unitless_confirmation_required": "No compatible unit metadata is available. Explicitly confirm the target unit for this source.",
+      "invalid_source_value": "The source must be a finite number within the supported range.",
+      "timer_exceeds_maximum": "Default duration exceeds the configured maximum.",
+      "confirmation_required": "Confirm before continuing.",
+      "invalid_configuration": "Some configuration is invalid. Review the slot details and intervals.",
+      "save_failed": "Saving failed. The previous configuration remains active.",
+      "transition_failed": "The new configuration was saved, but unloading failed. Writes remain blocked; reload or restart the integration.",
+      "slot_not_free": "Choose an unused destination slot.",
+      "repair_use_editor": "This value cannot be restored as a whole slot. Preserve the archive and correct it in the appropriate editor.",
+      "invalid_interval": "Enter an integer within the displayed limits.",
+      "invalid_boolean": "Choose enabled or disabled.",
+      "invalid_log_level": "Choose normal or debug logging.",
+      "watchdog_too_short": "Watchdog must not be shorter than the write interval.",
+      "repair_kind_mismatch": "Restore this choice only into a slot of the same kind."
+    },
+    "abort": {
+      "already_configured": "This Futura device is already configured.",
+      "cancelled": "Setup cancelled.",
+      "reconfigure_successful": "Configuration saved.",
+      "reconfigure_started": "Reconfiguration started. Open the integration entry to continue.",
+      "reconfigure_required": "Open the integration entry menu and choose Reconfigure."
+    }
+  },
+  "selector": {
+    "profile_mode": {
+      "options": {
+        "auto": "Automatic · L/M/S only",
+        "futura_lms": "Futura L/M/S"
+      }
+    },
+    "sensor_mode": {
+      "options": {
+        "none": "None",
+        "read": "Read",
+        "ha_writeback": "HA Write-back"
+      }
+    },
+    "button_ownership": {
+      "options": {
+        "none": "None",
+        "futura": "Futura",
+        "ha_control": "HA Control"
+      }
+    },
+    "button_mode": {
+      "options": {
+        "boost": "Boost",
+        "digestor": "Digestor"
+      }
+    },
+    "log_level_bridge": {
+      "options": {
+        "normal": "Normal",
+        "debug": "Debug"
+      }
+    },
+    "wizard_action": {
+      "options": {
+        "continue": "Continue",
+        "back": "Back",
+        "cancel": "Cancel",
+        "save": "Save",
+        "disabled": "Disabled",
+        "none": "None",
+        "read": "Read",
+        "ha_writeback": "HA Write-back",
+        "futura": "Futura",
+        "ha_control": "HA Control",
+        "sensor": "Sensor",
+        "button": "Button",
+        "supply": "Supply",
+        "exhaust": "Exhaust",
+        "standalone": "Without zone",
+        "yes": "Yes",
+        "no": "No",
+        "unchanged": "No changes",
+        "unavailable": "Unavailable",
+        "preview": "Read selected slots",
+        "runtime": "Intervals and bridge",
+        "zones": "Zones",
+        "sensor_slots": "Sensors",
+        "button_slots": "Buttons",
+        "connection": "Connection",
+        "summary": "Summary",
+        "repair": "Repair archived choices",
+        "full": "Full configuration",
+        "keep_disabled": "Keep archived and disabled",
+        "remove": "Remove from active configuration (archive retained)",
+        "restore": "Restore archived choice to a free slot",
+        "retain": "Keep slots without zone",
+        "deactivate": "Disable associated slots",
+        "accept_defaults": "Use the displayed runtime values",
+        "edit_runtime": "Edit runtime settings first",
+        "saved_value": "Saved value",
+        "proposed_value": "Value proposed for saving",
+        "saved_choice": "Saved choice",
+        "invalid_runtime": "The saved setting is invalid. Temporary valid defaults are in use; you can edit them before accepting.",
+        "conflicting_choice": "Saved choices conflict. Choose what to keep inactive or restore into an unused slot. Restored slots stay disabled until edited.",
+        "review_choice": "This saved choice needs review before it can be used.",
+        "complex_choice": "Additional original details are preserved in the migration archive for support."
+      }
+    },
+    "slot_action": {
+      "options": {
+        "1": "Slot 1",
+        "2": "Slot 2",
+        "3": "Slot 3",
+        "4": "Slot 4",
+        "5": "Slot 5",
+        "6": "Slot 6",
+        "7": "Slot 7",
+        "8": "Slot 8",
+        "continue": "Continue",
+        "back": "Back",
+        "cancel": "Cancel"
+      }
+    },
+    "zone_action": {
+      "options": {
+        "supply_1": "Supply 1",
+        "supply_2": "Supply 2",
+        "supply_3": "Supply 3",
+        "supply_4": "Supply 4",
+        "supply_5": "Supply 5",
+        "supply_6": "Supply 6",
+        "supply_7": "Supply 7",
+        "supply_8": "Supply 8",
+        "exhaust_1": "Exhaust 1",
+        "exhaust_2": "Exhaust 2",
+        "exhaust_3": "Exhaust 3",
+        "exhaust_4": "Exhaust 4",
+        "exhaust_5": "Exhaust 5",
+        "exhaust_6": "Exhaust 6",
+        "exhaust_7": "Exhaust 7",
+        "exhaust_8": "Exhaust 8",
+        "continue": "Continue",
+        "back": "Back",
+        "cancel": "Cancel"
+      }
+    },
+    "zone_binding": {
+      "options": {
+        "none": "Without zone",
+        "supply_1": "Supply 1",
+        "supply_2": "Supply 2",
+        "supply_3": "Supply 3",
+        "supply_4": "Supply 4",
+        "supply_5": "Supply 5",
+        "supply_6": "Supply 6",
+        "supply_7": "Supply 7",
+        "supply_8": "Supply 8",
+        "exhaust_1": "Exhaust 1",
+        "exhaust_2": "Exhaust 2",
+        "exhaust_3": "Exhaust 3",
+        "exhaust_4": "Exhaust 4",
+        "exhaust_5": "Exhaust 5",
+        "exhaust_6": "Exhaust 6",
+        "exhaust_7": "Exhaust 7",
+        "exhaust_8": "Exhaust 8"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "external_temperature": {
+        "name": "External sensor {slot} temperature"
+      },
+      "external_humidity": {
+        "name": "External sensor {slot} humidity"
+      },
+      "external_co2": {
+        "name": "External sensor {slot} CO₂"
+      },
+      "external_floor_temperature": {
+        "name": "External sensor {slot} floor temperature"
+      },
+      "external_button_timer": {
+        "name": "External button {slot} remaining time"
+      }
+    },
+    "binary_sensor": {
+      "external_sensor_present": {
+        "name": "External sensor {slot} present"
+      },
+      "external_button_active": {
+        "name": "External button {slot} active"
+      }
+    },
+    "button": {
+      "external_button": {
+        "name": "External button {slot}"
+      }
+    }
+  },
+  "issues": {
+    "migration_failed": {
+      "title": "Futura requires attention",
+      "description": "Writes are blocked or deactivation could not be confirmed. Open the Futura entry and reconfigure. Review archived choices or explicitly recover a failed button cleanup. A restart alone does not confirm successful deactivation."
+    },
+    "migration_needs_repair": {
+      "title": "Futura requires attention",
+      "description": "Writes are blocked or deactivation could not be confirmed. Open the Futura entry and reconfigure. Review archived choices or explicitly recover a failed button cleanup. A restart alone does not confirm successful deactivation."
+    },
+    "cleanup_failed": {
+      "title": "Futura requires attention",
+      "description": "Writes are blocked or deactivation could not be confirmed. Open the Futura entry and reconfigure. Review archived choices or explicitly recover a failed button cleanup. A restart alone does not confirm successful deactivation."
+    },
+    "transition_failed": {
+      "title": "Futura requires attention",
+      "description": "Writes are blocked or deactivation could not be confirmed. Open the Futura entry and reconfigure. Review archived choices or explicitly recover a failed button cleanup. A restart alone does not confirm successful deactivation."
+    },
+    "identity_mismatch": {
+      "title": "Futura requires attention",
+      "description": "Writes are blocked or deactivation could not be confirmed. Open the Futura entry and reconfigure. Review archived choices or explicitly recover a failed button cleanup. A restart alone does not confirm successful deactivation."
+    },
+    "runtime_storage_failed": {
+      "title": "Futura requires attention",
+      "description": "Writes are blocked or deactivation could not be confirmed. Open the Futura entry and reconfigure. Review archived choices or explicitly recover a failed button cleanup. A restart alone does not confirm successful deactivation."
+    }
+  },
+  "services": {
+    "activate_external_button": {
+      "name": "Activate external button",
+      "description": "Activate an HA Control slot once. Commands are not replayed after an outage.",
+      "fields": {
+        "duration_seconds": {
+          "name": "Duration",
+          "description": "Seconds, 1 to the configured slot maximum (at most 10800)."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "activation_failed": {
+      "message": "Activation was not acknowledged. Check cleanup results in diagnostics."
+    },
+    "button_unavailable": {
+      "message": "The button is busy or requires recovery."
+    },
+    "invalid_duration": {
+      "message": "Duration is outside the configured slot limits."
+    },
+    "slot_not_owned": {
+      "message": "This slot is not enabled for HA Control."
     }
   }
 }

@@ -2,163 +2,715 @@
   "title": "Jablotron Futura Bridge",
   "config": {
     "abort": {
-      "already_configured": "Tato Futura je uz nakonfigurovana."
+      "already_configured": "Tato Futura je uz nakonfigurovana.",
+      "cancelled": "Nastavení zrušeno.",
+      "reconfigure_successful": "Konfigurace uložena.",
+      "reconfigure_started": "Změna konfigurace byla zahájena. Pokračujte u položky integrace.",
+      "reconfigure_required": "V nabídce položky integrace vyberte Přenastavit."
     },
     "error": {
       "already_configured": "Tato Futura je uz nakonfigurovana.",
       "cannot_connect": "K zarizeni se nelze pripojit.",
+      "cannot_read_identity": "Identitu zarizeni se nepodarilo spolehlive nacist.",
+      "entity_not_found": "Zvolena entita uz neexistuje.",
+      "external_buttons_require_detected_zone": "Externi tlacitka lze povolit jen kdyz je alespon jedna zapnuta odtahova zona s detekovanym tlacitkem.",
+      "external_buttons_require_enabled_button": "Pri zapnute funkci externich tlacitek musi byt exponovano alespon jedno detekovane tlacitko.",
+      "button_active_seconds_too_high": "Doba aktivace tlacitka prekrocila podporovane maximum.",
+      "button_active_seconds_too_low": "Doba aktivace tlacitka musi byt alespon 1 sekunda.",
+      "invalid_button_mode": "Zvoleny rezim tlacitka neni podporovany.",
+      "invalid_entity_domain": "Zvolena domena entity neni podporovana.",
+      "invalid_entity_unit": "Zvolena entita ma nekompatibilni jednotky.",
       "invalid_profile": "Autodetekce profilu nebyla jednoznacna nebo zvoleny profil neodpovida zarizeni.",
-      "not_futura_device": "Nactene registry nevypadaji jako Jablotron Futura."
+      "no_alfa_detected": "Pro vybrane zony musi byt detekovan alespon jeden ovladac ALFA.",
+      "no_zones_selected": "Musi byt zapnuta alespon jedna detekovana zona.",
+      "not_futura_device": "Nactene registry nevypadaji jako Jablotron Futura.",
+      "topology_drift_requires_confirmation": "Pred pokracovanim potvrd zmenu detekovane topologie.",
+      "too_many_external_buttons": "Detekovana topologie prekrocila MVP limit dvou tlacitek na zonu.",
+      "too_many_exhaust_dampers": "Detekovana topologie prekrocila MVP limit ctyr odtahovych klapek na zonu.",
+      "too_many_supply_dampers": "Detekovana topologie prekrocila MVP limit ctyr privodnich klapek na zonu.",
+      "read_interval_too_low": "Interval cteni musi byt alespon 1000 ms.",
+      "write_interval_too_low": "Interval zapisu musi byt alespon 5000 ms.",
+      "writeback_entities_required": "Vyberte alespoň jeden zdroj.",
+      "writeback_requires_supply_zone": "HA write-back vyzaduje alespon jednu zapnutou privodni zonu.",
+      "variobreeze_not_detected": "VarioBreeze neni zarizenim detekovano. Jste si jisti?",
+      "variobreeze_detected_but_disabled": "VarioBreeze je detekovano. Vypnuti zonoveho vetrani vytvori jednozonovou konfiguraci.",
+      "invalid_value": "Zadejte platnou hodnotu.",
+      "identity_mismatch": "Jde o jinou jednotku. Uložená konfigurace se nezměnila.",
+      "unitless_confirmation_required": "Chybí metadata kompatibilní jednotky. Výslovně potvrďte předpokládanou jednotku tohoto zdroje.",
+      "invalid_source_value": "Zdroj musí být konečné číslo v podporovaném rozsahu.",
+      "timer_exceeds_maximum": "Výchozí doba přesahuje povolené maximum.",
+      "confirmation_required": "Před pokračováním potvrďte volbu.",
+      "invalid_configuration": "Některá konfigurace je neplatná. Zkontrolujte detaily slotů a intervaly.",
+      "save_failed": "Uložení selhalo. Původní konfigurace zůstává aktivní.",
+      "transition_failed": "Nová konfigurace se uložila, ale odpojení selhalo. Zápisy zůstávají blokované; znovu načtěte integraci nebo restartujte HA.",
+      "slot_not_free": "Vyberte nepoužitý cílový slot.",
+      "repair_use_editor": "Tuto hodnotu nelze obnovit jako celý slot. Zachovejte archiv a opravte ji v příslušném editoru.",
+      "invalid_interval": "Zadejte celé číslo v uvedených mezích.",
+      "invalid_boolean": "Vyberte zapnuto nebo vypnuto.",
+      "invalid_log_level": "Vyberte běžný nebo ladicí protokol.",
+      "watchdog_too_short": "Watchdog nesmí být kratší než interval zápisu.",
+      "repair_kind_mismatch": "Obnovte tuto volbu pouze do slotu stejného typu."
     },
     "step": {
-      "user": {
-        "title": "Pripojit Jablotron Futura",
-        "description": "{commissioning_notice}",
+      "setup_warning": {
+        "title": "Volba se liší od detekce",
+        "description": "Vaše volba VarioBreeze se liší od zjištěné podpory. Můžete pokračovat oběma cestami. Existující zdroje a fyzické vazby zůstanou zachovány.",
         "data": {
-          "host": "Host nebo IP adresa",
-          "port": "Port",
-          "unit_id": "Unit ID",
-          "profile_mode": "Rezim profilu",
-          "scan_interval_s": "Interval cteni (s)"
+          "action": "Další krok"
         }
       },
-      "reconfigure": {
-        "title": "Zmenit nastaveni Jablotron Futura",
-        "description": "{commissioning_notice}",
+      "connection": {
+        "title": "Připojení",
+        "description": "Připojte již zprovozněnou Futuru L/M/S. L+ není podporováno. Ověření pouze čte; žádné hodnoty nezapisuje.",
         "data": {
           "host": "Host nebo IP adresa",
           "port": "Port",
-          "unit_id": "Unit ID",
-          "profile_mode": "Rezim profilu",
-          "scan_interval_s": "Interval cteni (s)"
+          "unit_id": "Modbus unit ID",
+          "profile_mode": "Profil jednotky",
+          "action": "Další krok"
+        }
+      },
+      "device_info": {
+        "title": "Ověřená jednotka",
+        "description": "{identity}\n\nZjištěná podpora VarioBreeze: **{detected}**. Podpora nepotvrzuje fyzickou instalaci. Obě cesty obsahují všechny senzorové a tlačítkové sloty. Odlišná volba nepřepíše uložená mapování. Firmware je pouze informace; integrace neprovádí aktualizace firmwaru.\n\n**Zjištěné změny topologie (uložená mapování zůstávají zachovaná)**\n{topology_changes}",
+        "data": {
+          "variobreeze": "Použít zónový průvodce (VarioBreeze)",
+          "action": "Další krok"
+        }
+      },
+      "zones": {
+        "title": "Zóny · 8 přívodů + 8 odtahů",
+        "description": "Vyberte zónu pro změnu názvu a oblasti. Fyzické vazby klapek a ALFA zůstanou zachovány. Zóny organizují UI; význam v jednotce určuje číslo slotu.\n\n{zones}",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "zone_detail": {
+        "title": "Zóna",
+        "description": "**{zone}**\n\nZjištěné fyzické vazby: {topology}",
+        "data": {
+          "name": "Název",
+          "enabled": "Slot / zóna se používá",
+          "area_id": "Oblast Home Assistant",
+          "damper_1": "Název klapky 1",
+          "damper_2": "Název klapky 2",
+          "damper_3": "Název klapky 3",
+          "damper_4": "Název klapky 4",
+          "action": "Další krok"
+        }
+      },
+      "zone_disabled": {
+        "title": "Navázané sloty",
+        "description": "Tato zóna má navázané sloty. Zachovejte je bez zónové vazby, nebo je vypněte se zachováním zdrojů.",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "preview": {
+        "title": "Náhled měření",
+        "description": "**ALFA (samostatná input měření)**\n{alfa}\n\n**Externí holding sloty**\n{readings}\n\nČtou se pouze zapnuté Read/HA sloty. Nový slot můžete prohlédnout volbou Čtení v detailu. Readback neprokazuje účinek na větrání.",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "sensor_slots": {
+        "title": "Senzory · 8 nezávislých slotů",
+        "description": "Vyberte slot. Žádný nečte ani nezapisuje. Čtení sleduje Futuru. HA Write-back posílá vybrané hodnoty Home Assistant a čte je zpět. Můžete pokračovat i bez nastavení slotu.\n\n{slots}",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "sensor_detail": {
+        "title": "Senzor · slot {slot}",
+        "description": "Zónová vazba je nepovinná a pouze organizuje UI. Nemění adresu registru ani fyzickou zónu. Vypnutí či režim Žádný zachová zdroje.",
+        "data": {
+          "name": "Název",
+          "enabled": "Slot / zóna se používá",
+          "mode": "Režim senzoru",
+          "zone_binding": "Zóna (volitelně)",
+          "action": "Další krok"
+        }
+      },
+      "sensor_sources": {
+        "title": "HA zdroje · slot {slot}",
+        "description": "Vyberte alespoň jeden zdroj. Jednotky se ověřují také pro podlahovou teplotu. Cílovou jednotku potvrďte pouze u zdroje bez jednotky. Jiný producent může hodnoty přepisovat; nepoužívejte souběžně jiného zapisujícího klienta. IN1/IN2 a regulace jednotky mohou účinek změnit.",
+        "data": {
+          "temperature_entity_id": "Teplota",
+          "temperature_unitless": "Pro zdroj teplota bez jednotky předpokládat °C",
+          "humidity_entity_id": "Relativní vlhkost",
+          "humidity_unitless": "Pro zdroj relativní vlhkost bez jednotky předpokládat %",
+          "co2_entity_id": "CO₂",
+          "co2_unitless": "Pro zdroj co₂ bez jednotky předpokládat ppm",
+          "floor_temperature_entity_id": "Podlahová teplota",
+          "floor_temperature_unitless": "Pro zdroj podlahová teplota bez jednotky předpokládat °C",
+          "action": "Další krok"
+        }
+      },
+      "sensor_readback": {
+        "title": "Čtení senzoru · slot {slot}",
+        "description": "{readings}\n\nHodnoty z holding registrů Futury. Nepřítomná či neplatná metrika je nedostupná, nikoli nula. Pokračování zachová pracovní návrh bez zápisu.",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "button_slots": {
+        "title": "Tlačítka · 8 nezávislých slotů",
+        "description": "Žádný nečte ani nezapisuje. Futura čte tlačítko ovládané jinde. HA Control vytvoří tlačítko a službu i bez fyzického tlačítka.\n\n{slots}",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "button_detail": {
+        "title": "Tlačítko · slot {slot}",
+        "description": "Nepovinná zónová vazba je pouze organizační. Volba HA Control výslovně zapíná ovládání z Home Assistant. Nepoužívejte pro tentýž slot druhého zapisujícího klienta.",
+        "data": {
+          "name": "Název",
+          "enabled": "Slot / zóna se používá",
+          "ownership": "Režim tlačítka",
+          "zone_binding": "Zóna (volitelně)",
+          "action": "Další krok"
+        }
+      },
+      "button_action": {
+        "title": "Akce · slot {slot}",
+        "description": "Vyberte akci. Při změně typu se nabídne Boost 180 s nebo Digestoř 300 s; dobu upravíte v dalším kroku.",
+        "data": {
+          "button_mode": "Typ akce",
+          "action": "Další krok"
+        }
+      },
+      "button_timer": {
+        "title": "Časovač · slot {slot}",
+        "description": "Výchozí doba nesmí přesáhnout maximum (1–10800 s). Po výpadku se příkaz neopakuje. Potvrzený přenos neprokazuje spuštění ventilace. Obnova slouží pouze po neúspěšné deaktivaci: po uložení provede jeden pokus o deaktivaci před povolením dalšího stisku.",
+        "data": {
+          "default_timer_seconds": "Výchozí doba (s)",
+          "max_active_seconds": "Nejvyšší povolená doba (s)",
+          "recover_cleanup": "Po uložení obnovit neúspěšnou deaktivaci",
+          "action": "Další krok"
+        }
+      },
+      "button_readback": {
+        "title": "Čtení tlačítka · slot {slot}",
+        "description": "{readings}\n\nRežim Futura pouze čte. Časovač je pozorovaná hodnota, nikoli ovladač.",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "runtime": {
+        "title": "Intervaly a bridge",
+        "description": "Bridge povoluje pouze senzorové zápisy; tlačítka jsou nezávislá. Readback a standardní čtení mají oddělené intervaly. Watchdog musí být alespoň interval zápisu zaokrouhlený nahoru na sekundy.",
+        "data": {
+          "bridge_enabled": "Povolit zápisy senzorů",
+          "write_on_change_only": "Zapisovat pouze změny (mimo watchdog)",
+          "read_interval_ms": "Interval zpětného čtení (ms)",
+          "write_interval_ms": "Nejkratší interval zápisu (ms)",
+          "scan_interval_s": "Interval standardního čtení (s)",
+          "stale_after_s": "Zdroj zastará po (s)",
+          "force_resync_every_s": "Obnovení watchdogem (s)",
+          "log_level_bridge": "Protokolování",
+          "action": "Další krok"
+        }
+      },
+      "repair": {
+        "title": "Oprava migrace",
+        "description": "**{conflict_title} · {item}**\n{details}\n\n{explanation}\n\nZápisy zůstávají blokované až do potvrzení a uložení úplné konfigurace. Původní nastavení zůstává v migračním archivu pro podporu.",
+        "data": {
+          "target_kind": "Obnovit jako",
+          "target_slot": "Volný cílový slot",
+          "confirm_resolution": "Potvrdit toto řešení / aktuální výchozí hodnoty",
+          "action": "Další krok"
+        }
+      },
+      "summary": {
+        "title": "Souhrn a uložení",
+        "description": "{summary}\n\n**Změny**\n{diff}\n\nDetaily zatím mění pouze pracovní návrh. Uložení znovu ověří identitu, uloží konfiguraci a podle potřeby deaktivuje předchozí HA vlastnictví. Neúspěšná deaktivace se zaznamená; při výpadku ji nelze zaručit.",
+        "data": {
+          "confirm_save": "Potvrzuji uložení této konfigurace",
+          "action": "Další krok"
+        }
+      },
+      "init": {
+        "title": "Možnosti Futury",
+        "description": "Upravte názvy, oblasti, časovače a intervaly. Připojení, topologii, režimy a zdroje změníte v úplném nastavení.",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "full_configuration": {
+        "title": "Úplné nastavení",
+        "description": "Otevřete [integraci Futura](/config/integrations/integration/jablotron_futura) a v nabídce položky vyberte Změnit konfiguraci. Před zahájením úplného průvodce zavřete tento dialog možností.",
+        "data": {
+          "action": "Další krok"
         }
       }
     }
   },
   "options": {
-    "error": {
-      "bridge_interval_too_low": "Interval bridge zapisu musi byt alespon 5 sekund.",
-      "stale_after_too_low": "Timeout zastaralosti musi byt alespon 10 sekund.",
-      "force_resync_too_low": "Interval vynucene synchronizace musi byt alespon 60 sekund.",
-      "slot_requires_source": "Zapnuty slot musi mit alespon jednu zdrojovou entitu.",
-      "invalid_entity_domain": "Zvolena domena entity neni podporovana.",
-      "entity_not_found": "Zvolena entita uz neexistuje.",
-      "invalid_entity_unit": "Zvolena entita ma nekompatibilni jednotky."
-    },
     "step": {
-      "global": {
-        "title": "Globalni bridge nastaveni",
-        "description": "{commissioning_notice}",
+      "setup_warning": {
+        "title": "Volba se liší od detekce",
+        "description": "Vaše volba VarioBreeze se liší od zjištěné podpory. Můžete pokračovat oběma cestami. Existující zdroje a fyzické vazby zůstanou zachovány.",
         "data": {
-          "bridge_enabled": "Bridge zapnuty",
-          "bridge_update_interval_s": "Interval bridge zapisu (s)",
-          "stale_after_s": "Oznacit zdroj jako zastaraly po (s)",
-          "write_on_change_only": "Zapisovat jen pri zmene payloadu",
-          "force_resync_every_s": "Vynutit synchronizaci po (s)",
-          "log_level_bridge": "Uroven bridge logu",
-          "show_commissioning_notice": "Zobrazit commissioning upozorneni"
+          "action": "Další krok"
         }
       },
-      "slot_1": {
-        "title": "Slot externiho senzoru 1",
-        "description": "Nastav mapovani pro slot {slot_index}.",
+      "connection": {
+        "title": "Připojení",
+        "description": "Připojte již zprovozněnou Futuru L/M/S. L+ není podporováno. Ověření pouze čte; žádné hodnoty nezapisuje.",
         "data": {
-          "enabled": "Zapnuto",
-          "slot_name": "Nazev slotu",
-          "temperature_entity_id": "Entita teploty",
-          "humidity_entity_id": "Entita vlhkosti",
-          "co2_entity_id": "Entita CO2",
-          "floor_temperature_entity_id": "Entita teploty podlahy"
+          "host": "Host nebo IP adresa",
+          "port": "Port",
+          "unit_id": "Modbus unit ID",
+          "profile_mode": "Profil jednotky",
+          "action": "Další krok"
         }
       },
-      "slot_2": {
-        "title": "Slot externiho senzoru 2",
-        "description": "Nastav mapovani pro slot {slot_index}.",
+      "device_info": {
+        "title": "Ověřená jednotka",
+        "description": "{identity}\n\nZjištěná podpora VarioBreeze: **{detected}**. Podpora nepotvrzuje fyzickou instalaci. Obě cesty obsahují všechny senzorové a tlačítkové sloty. Odlišná volba nepřepíše uložená mapování. Firmware je pouze informace; integrace neprovádí aktualizace firmwaru.\n\n**Zjištěné změny topologie (uložená mapování zůstávají zachovaná)**\n{topology_changes}",
         "data": {
-          "enabled": "Zapnuto",
-          "slot_name": "Nazev slotu",
-          "temperature_entity_id": "Entita teploty",
-          "humidity_entity_id": "Entita vlhkosti",
-          "co2_entity_id": "Entita CO2",
-          "floor_temperature_entity_id": "Entita teploty podlahy"
+          "variobreeze": "Použít zónový průvodce (VarioBreeze)",
+          "action": "Další krok"
         }
       },
-      "slot_3": {
-        "title": "Slot externiho senzoru 3",
-        "description": "Nastav mapovani pro slot {slot_index}.",
+      "zones": {
+        "title": "Zóny · 8 přívodů + 8 odtahů",
+        "description": "Vyberte zónu pro změnu názvu a oblasti. Fyzické vazby klapek a ALFA zůstanou zachovány. Zóny organizují UI; význam v jednotce určuje číslo slotu.\n\n{zones}",
         "data": {
-          "enabled": "Zapnuto",
-          "slot_name": "Nazev slotu",
-          "temperature_entity_id": "Entita teploty",
-          "humidity_entity_id": "Entita vlhkosti",
-          "co2_entity_id": "Entita CO2",
-          "floor_temperature_entity_id": "Entita teploty podlahy"
+          "action": "Další krok"
         }
       },
-      "slot_4": {
-        "title": "Slot externiho senzoru 4",
-        "description": "Nastav mapovani pro slot {slot_index}.",
+      "zone_detail": {
+        "title": "Zóna",
+        "description": "**{zone}**\n\nZjištěné fyzické vazby: {topology}",
         "data": {
-          "enabled": "Zapnuto",
-          "slot_name": "Nazev slotu",
-          "temperature_entity_id": "Entita teploty",
-          "humidity_entity_id": "Entita vlhkosti",
-          "co2_entity_id": "Entita CO2",
-          "floor_temperature_entity_id": "Entita teploty podlahy"
+          "name": "Název",
+          "enabled": "Slot / zóna se používá",
+          "area_id": "Oblast Home Assistant",
+          "damper_1": "Název klapky 1",
+          "damper_2": "Název klapky 2",
+          "damper_3": "Název klapky 3",
+          "damper_4": "Název klapky 4",
+          "action": "Další krok"
         }
       },
-      "slot_5": {
-        "title": "Slot externiho senzoru 5",
-        "description": "Nastav mapovani pro slot {slot_index}.",
+      "zone_disabled": {
+        "title": "Navázané sloty",
+        "description": "Tato zóna má navázané sloty. Zachovejte je bez zónové vazby, nebo je vypněte se zachováním zdrojů.",
         "data": {
-          "enabled": "Zapnuto",
-          "slot_name": "Nazev slotu",
-          "temperature_entity_id": "Entita teploty",
-          "humidity_entity_id": "Entita vlhkosti",
-          "co2_entity_id": "Entita CO2",
-          "floor_temperature_entity_id": "Entita teploty podlahy"
+          "action": "Další krok"
         }
       },
-      "slot_6": {
-        "title": "Slot externiho senzoru 6",
-        "description": "Nastav mapovani pro slot {slot_index}.",
+      "preview": {
+        "title": "Náhled měření",
+        "description": "**ALFA (samostatná input měření)**\n{alfa}\n\n**Externí holding sloty**\n{readings}\n\nČtou se pouze zapnuté Read/HA sloty. Nový slot můžete prohlédnout volbou Čtení v detailu. Readback neprokazuje účinek na větrání.",
         "data": {
-          "enabled": "Zapnuto",
-          "slot_name": "Nazev slotu",
-          "temperature_entity_id": "Entita teploty",
-          "humidity_entity_id": "Entita vlhkosti",
-          "co2_entity_id": "Entita CO2",
-          "floor_temperature_entity_id": "Entita teploty podlahy"
+          "action": "Další krok"
         }
       },
-      "slot_7": {
-        "title": "Slot externiho senzoru 7",
-        "description": "Nastav mapovani pro slot {slot_index}.",
+      "sensor_slots": {
+        "title": "Senzory · 8 nezávislých slotů",
+        "description": "Vyberte slot. Žádný nečte ani nezapisuje. Čtení sleduje Futuru. HA Write-back posílá vybrané hodnoty Home Assistant a čte je zpět. Můžete pokračovat i bez nastavení slotu.\n\n{slots}",
         "data": {
-          "enabled": "Zapnuto",
-          "slot_name": "Nazev slotu",
-          "temperature_entity_id": "Entita teploty",
-          "humidity_entity_id": "Entita vlhkosti",
-          "co2_entity_id": "Entita CO2",
-          "floor_temperature_entity_id": "Entita teploty podlahy"
+          "action": "Další krok"
         }
       },
-      "slot_8": {
-        "title": "Slot externiho senzoru 8",
-        "description": "Nastav mapovani pro slot {slot_index}.",
+      "sensor_detail": {
+        "title": "Senzor · slot {slot}",
+        "description": "Zónová vazba je nepovinná a pouze organizuje UI. Nemění adresu registru ani fyzickou zónu. Vypnutí či režim Žádný zachová zdroje.",
         "data": {
-          "enabled": "Zapnuto",
-          "slot_name": "Nazev slotu",
-          "temperature_entity_id": "Entita teploty",
-          "humidity_entity_id": "Entita vlhkosti",
-          "co2_entity_id": "Entita CO2",
-          "floor_temperature_entity_id": "Entita teploty podlahy"
+          "name": "Název",
+          "enabled": "Slot / zóna se používá",
+          "mode": "Režim senzoru",
+          "zone_binding": "Zóna (volitelně)",
+          "action": "Další krok"
+        }
+      },
+      "sensor_sources": {
+        "title": "HA zdroje · slot {slot}",
+        "description": "Vyberte alespoň jeden zdroj. Jednotky se ověřují také pro podlahovou teplotu. Cílovou jednotku potvrďte pouze u zdroje bez jednotky. Jiný producent může hodnoty přepisovat; nepoužívejte souběžně jiného zapisujícího klienta. IN1/IN2 a regulace jednotky mohou účinek změnit.",
+        "data": {
+          "temperature_entity_id": "Teplota",
+          "temperature_unitless": "Pro zdroj teplota bez jednotky předpokládat °C",
+          "humidity_entity_id": "Relativní vlhkost",
+          "humidity_unitless": "Pro zdroj relativní vlhkost bez jednotky předpokládat %",
+          "co2_entity_id": "CO₂",
+          "co2_unitless": "Pro zdroj co₂ bez jednotky předpokládat ppm",
+          "floor_temperature_entity_id": "Podlahová teplota",
+          "floor_temperature_unitless": "Pro zdroj podlahová teplota bez jednotky předpokládat °C",
+          "action": "Další krok"
+        }
+      },
+      "sensor_readback": {
+        "title": "Čtení senzoru · slot {slot}",
+        "description": "{readings}\n\nHodnoty z holding registrů Futury. Nepřítomná či neplatná metrika je nedostupná, nikoli nula. Pokračování zachová pracovní návrh bez zápisu.",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "button_slots": {
+        "title": "Tlačítka · 8 nezávislých slotů",
+        "description": "Žádný nečte ani nezapisuje. Futura čte tlačítko ovládané jinde. HA Control vytvoří tlačítko a službu i bez fyzického tlačítka.\n\n{slots}",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "button_detail": {
+        "title": "Tlačítko · slot {slot}",
+        "description": "Nepovinná zónová vazba je pouze organizační. Volba HA Control výslovně zapíná ovládání z Home Assistant. Nepoužívejte pro tentýž slot druhého zapisujícího klienta.",
+        "data": {
+          "name": "Název",
+          "enabled": "Slot / zóna se používá",
+          "ownership": "Režim tlačítka",
+          "zone_binding": "Zóna (volitelně)",
+          "action": "Další krok"
+        }
+      },
+      "button_action": {
+        "title": "Akce · slot {slot}",
+        "description": "Vyberte akci. Při změně typu se nabídne Boost 180 s nebo Digestoř 300 s; dobu upravíte v dalším kroku.",
+        "data": {
+          "button_mode": "Typ akce",
+          "action": "Další krok"
+        }
+      },
+      "button_timer": {
+        "title": "Časovač · slot {slot}",
+        "description": "Výchozí doba nesmí přesáhnout maximum (1–10800 s). Po výpadku se příkaz neopakuje. Potvrzený přenos neprokazuje spuštění ventilace. Obnova slouží pouze po neúspěšné deaktivaci: po uložení provede jeden pokus o deaktivaci před povolením dalšího stisku.",
+        "data": {
+          "default_timer_seconds": "Výchozí doba (s)",
+          "max_active_seconds": "Nejvyšší povolená doba (s)",
+          "recover_cleanup": "Po uložení obnovit neúspěšnou deaktivaci",
+          "action": "Další krok"
+        }
+      },
+      "button_readback": {
+        "title": "Čtení tlačítka · slot {slot}",
+        "description": "{readings}\n\nRežim Futura pouze čte. Časovač je pozorovaná hodnota, nikoli ovladač.",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "runtime": {
+        "title": "Intervaly a bridge",
+        "description": "Bridge povoluje pouze senzorové zápisy; tlačítka jsou nezávislá. Readback a standardní čtení mají oddělené intervaly. Watchdog musí být alespoň interval zápisu zaokrouhlený nahoru na sekundy.",
+        "data": {
+          "bridge_enabled": "Povolit zápisy senzorů",
+          "write_on_change_only": "Zapisovat pouze změny (mimo watchdog)",
+          "read_interval_ms": "Interval zpětného čtení (ms)",
+          "write_interval_ms": "Nejkratší interval zápisu (ms)",
+          "scan_interval_s": "Interval standardního čtení (s)",
+          "stale_after_s": "Zdroj zastará po (s)",
+          "force_resync_every_s": "Obnovení watchdogem (s)",
+          "log_level_bridge": "Protokolování",
+          "action": "Další krok"
+        }
+      },
+      "repair": {
+        "title": "Oprava migrace",
+        "description": "**{conflict_title} · {item}**\n{details}\n\n{explanation}\n\nZápisy zůstávají blokované až do potvrzení a uložení úplné konfigurace. Původní nastavení zůstává v migračním archivu pro podporu.",
+        "data": {
+          "target_kind": "Obnovit jako",
+          "target_slot": "Volný cílový slot",
+          "confirm_resolution": "Potvrdit toto řešení / aktuální výchozí hodnoty",
+          "action": "Další krok"
         }
       },
       "summary": {
-        "title": "Souhrn",
-        "description": "Zapnute sloty: {configured_slots}"
+        "title": "Souhrn a uložení",
+        "description": "{summary}\n\n**Změny**\n{diff}\n\nDetaily zatím mění pouze pracovní návrh. Uložení znovu ověří identitu, uloží konfiguraci a podle potřeby deaktivuje předchozí HA vlastnictví. Neúspěšná deaktivace se zaznamená; při výpadku ji nelze zaručit.",
+        "data": {
+          "confirm_save": "Potvrzuji uložení této konfigurace",
+          "action": "Další krok"
+        }
+      },
+      "init": {
+        "title": "Možnosti Futury",
+        "description": "Upravte názvy, oblasti, časovače a intervaly. Připojení, topologii, režimy a zdroje změníte v úplném nastavení.",
+        "data": {
+          "action": "Další krok"
+        }
+      },
+      "full_configuration": {
+        "title": "Úplné nastavení",
+        "description": "Otevřete [integraci Futura](/config/integrations/integration/jablotron_futura) a v nabídce položky vyberte Změnit konfiguraci. Před zahájením úplného průvodce zavřete tento dialog možností.",
+        "data": {
+          "action": "Další krok"
+        }
       }
+    },
+    "error": {
+      "already_configured": "Tato Futura je uz nakonfigurovana.",
+      "cannot_connect": "K zarizeni se nelze pripojit.",
+      "cannot_read_identity": "Identitu zarizeni se nepodarilo spolehlive nacist.",
+      "entity_not_found": "Zvolena entita uz neexistuje.",
+      "external_buttons_require_detected_zone": "Externi tlacitka lze povolit jen kdyz je alespon jedna zapnuta odtahova zona s detekovanym tlacitkem.",
+      "external_buttons_require_enabled_button": "Pri zapnute funkci externich tlacitek musi byt exponovano alespon jedno detekovane tlacitko.",
+      "button_active_seconds_too_high": "Doba aktivace tlacitka prekrocila podporovane maximum.",
+      "button_active_seconds_too_low": "Doba aktivace tlacitka musi byt alespon 1 sekunda.",
+      "invalid_button_mode": "Zvoleny rezim tlacitka neni podporovany.",
+      "invalid_entity_domain": "Zvolena domena entity neni podporovana.",
+      "invalid_entity_unit": "Zvolena entita ma nekompatibilni jednotky.",
+      "invalid_profile": "Autodetekce profilu nebyla jednoznacna nebo zvoleny profil neodpovida zarizeni.",
+      "no_alfa_detected": "Pro vybrane zony musi byt detekovan alespon jeden ovladac ALFA.",
+      "no_zones_selected": "Musi byt zapnuta alespon jedna detekovana zona.",
+      "not_futura_device": "Nactene registry nevypadaji jako Jablotron Futura.",
+      "topology_drift_requires_confirmation": "Pred pokracovanim potvrd zmenu detekovane topologie.",
+      "too_many_external_buttons": "Detekovana topologie prekrocila MVP limit dvou tlacitek na zonu.",
+      "too_many_exhaust_dampers": "Detekovana topologie prekrocila MVP limit ctyr odtahovych klapek na zonu.",
+      "too_many_supply_dampers": "Detekovana topologie prekrocila MVP limit ctyr privodnich klapek na zonu.",
+      "read_interval_too_low": "Interval cteni musi byt alespon 1000 ms.",
+      "write_interval_too_low": "Interval zapisu musi byt alespon 5000 ms.",
+      "writeback_entities_required": "Vyberte alespoň jeden zdroj.",
+      "writeback_requires_supply_zone": "HA write-back vyzaduje alespon jednu zapnutou privodni zonu.",
+      "variobreeze_not_detected": "VarioBreeze neni zarizenim detekovano. Jste si jisti?",
+      "variobreeze_detected_but_disabled": "VarioBreeze je detekovano. Vypnuti zonoveho vetrani vytvori jednozonovou konfiguraci.",
+      "invalid_value": "Zadejte platnou hodnotu.",
+      "identity_mismatch": "Jde o jinou jednotku. Uložená konfigurace se nezměnila.",
+      "unitless_confirmation_required": "Chybí metadata kompatibilní jednotky. Výslovně potvrďte předpokládanou jednotku tohoto zdroje.",
+      "invalid_source_value": "Zdroj musí být konečné číslo v podporovaném rozsahu.",
+      "timer_exceeds_maximum": "Výchozí doba přesahuje povolené maximum.",
+      "confirmation_required": "Před pokračováním potvrďte volbu.",
+      "invalid_configuration": "Některá konfigurace je neplatná. Zkontrolujte detaily slotů a intervaly.",
+      "save_failed": "Uložení selhalo. Původní konfigurace zůstává aktivní.",
+      "transition_failed": "Nová konfigurace se uložila, ale odpojení selhalo. Zápisy zůstávají blokované; znovu načtěte integraci nebo restartujte HA.",
+      "slot_not_free": "Vyberte nepoužitý cílový slot.",
+      "repair_use_editor": "Tuto hodnotu nelze obnovit jako celý slot. Zachovejte archiv a opravte ji v příslušném editoru.",
+      "invalid_interval": "Zadejte celé číslo v uvedených mezích.",
+      "invalid_boolean": "Vyberte zapnuto nebo vypnuto.",
+      "invalid_log_level": "Vyberte běžný nebo ladicí protokol.",
+      "watchdog_too_short": "Watchdog nesmí být kratší než interval zápisu.",
+      "repair_kind_mismatch": "Obnovte tuto volbu pouze do slotu stejného typu."
+    },
+    "abort": {
+      "already_configured": "Tato Futura je uz nakonfigurovana.",
+      "cancelled": "Nastavení zrušeno.",
+      "reconfigure_successful": "Konfigurace uložena.",
+      "reconfigure_started": "Změna konfigurace byla zahájena. Pokračujte u položky integrace.",
+      "reconfigure_required": "V nabídce položky integrace vyberte Přenastavit."
+    }
+  },
+  "selector": {
+    "profile_mode": {
+      "options": {
+        "auto": "Automaticky · pouze L/M/S",
+        "futura_lms": "Futura L/M/S"
+      }
+    },
+    "sensor_mode": {
+      "options": {
+        "none": "Žádný",
+        "read": "Čtení",
+        "ha_writeback": "HA Write-back"
+      }
+    },
+    "button_ownership": {
+      "options": {
+        "none": "Žádný",
+        "futura": "Futura",
+        "ha_control": "HA Control"
+      }
+    },
+    "button_mode": {
+      "options": {
+        "boost": "Boost",
+        "digestor": "Digestoř"
+      }
+    },
+    "log_level_bridge": {
+      "options": {
+        "normal": "Běžné",
+        "debug": "Ladicí"
+      }
+    },
+    "wizard_action": {
+      "options": {
+        "continue": "Pokračovat",
+        "back": "Zpět",
+        "cancel": "Zrušit",
+        "save": "Uložit",
+        "disabled": "Vypnuto",
+        "none": "Žádný",
+        "read": "Čtení",
+        "ha_writeback": "HA Write-back",
+        "futura": "Futura",
+        "ha_control": "HA Control",
+        "sensor": "Senzor",
+        "button": "Tlačítko",
+        "supply": "Přívod",
+        "exhaust": "Odtah",
+        "standalone": "Bez vazby na zónu",
+        "yes": "Ano",
+        "no": "Ne",
+        "unchanged": "Beze změn",
+        "unavailable": "Nedostupné",
+        "preview": "Načíst zvolené sloty",
+        "runtime": "Intervaly a bridge",
+        "zones": "Zóny",
+        "sensor_slots": "Senzory",
+        "button_slots": "Tlačítka",
+        "connection": "Připojení",
+        "summary": "Souhrn",
+        "repair": "Opravit archivované volby",
+        "full": "Úplné nastavení",
+        "keep_disabled": "Ponechat archivované a vypnuté",
+        "remove": "Odstranit z aktivní konfigurace (archiv zůstává)",
+        "restore": "Obnovit archivovanou volbu do volného slotu",
+        "retain": "Zachovat sloty bez vazby",
+        "deactivate": "Vypnout navázané sloty",
+        "accept_defaults": "Použít zobrazené provozní hodnoty",
+        "edit_runtime": "Nejprve upravit provozní nastavení",
+        "saved_value": "Původní hodnota",
+        "proposed_value": "Hodnota navržená k uložení",
+        "saved_choice": "Původní volba",
+        "invalid_runtime": "Uložené nastavení je neplatné. Používají se dočasné platné výchozí hodnoty; před přijetím je můžete upravit.",
+        "conflicting_choice": "Uložené volby jsou v konfliktu. Vyberte, co ponechat neaktivní nebo obnovit do nepoužitého slotu. Obnovené sloty zůstanou vypnuté, dokud je neupravíte.",
+        "review_choice": "Tuto uloženou volbu je před použitím nutné zkontrolovat.",
+        "complex_choice": "Další původní podrobnosti jsou zachované v migračním archivu pro podporu."
+      }
+    },
+    "slot_action": {
+      "options": {
+        "1": "Slot 1",
+        "2": "Slot 2",
+        "3": "Slot 3",
+        "4": "Slot 4",
+        "5": "Slot 5",
+        "6": "Slot 6",
+        "7": "Slot 7",
+        "8": "Slot 8",
+        "continue": "Pokračovat",
+        "back": "Zpět",
+        "cancel": "Zrušit"
+      }
+    },
+    "zone_action": {
+      "options": {
+        "supply_1": "Přívod 1",
+        "supply_2": "Přívod 2",
+        "supply_3": "Přívod 3",
+        "supply_4": "Přívod 4",
+        "supply_5": "Přívod 5",
+        "supply_6": "Přívod 6",
+        "supply_7": "Přívod 7",
+        "supply_8": "Přívod 8",
+        "exhaust_1": "Odtah 1",
+        "exhaust_2": "Odtah 2",
+        "exhaust_3": "Odtah 3",
+        "exhaust_4": "Odtah 4",
+        "exhaust_5": "Odtah 5",
+        "exhaust_6": "Odtah 6",
+        "exhaust_7": "Odtah 7",
+        "exhaust_8": "Odtah 8",
+        "continue": "Pokračovat",
+        "back": "Zpět",
+        "cancel": "Zrušit"
+      }
+    },
+    "zone_binding": {
+      "options": {
+        "none": "Bez vazby na zónu",
+        "supply_1": "Přívod 1",
+        "supply_2": "Přívod 2",
+        "supply_3": "Přívod 3",
+        "supply_4": "Přívod 4",
+        "supply_5": "Přívod 5",
+        "supply_6": "Přívod 6",
+        "supply_7": "Přívod 7",
+        "supply_8": "Přívod 8",
+        "exhaust_1": "Odtah 1",
+        "exhaust_2": "Odtah 2",
+        "exhaust_3": "Odtah 3",
+        "exhaust_4": "Odtah 4",
+        "exhaust_5": "Odtah 5",
+        "exhaust_6": "Odtah 6",
+        "exhaust_7": "Odtah 7",
+        "exhaust_8": "Odtah 8"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "external_temperature": {
+        "name": "Externí senzor {slot} teplota"
+      },
+      "external_humidity": {
+        "name": "Externí senzor {slot} vlhkost"
+      },
+      "external_co2": {
+        "name": "Externí senzor {slot} CO₂"
+      },
+      "external_floor_temperature": {
+        "name": "Externí senzor {slot} podlahová teplota"
+      },
+      "external_button_timer": {
+        "name": "Externí tlačítko {slot} zbývající čas"
+      }
+    },
+    "binary_sensor": {
+      "external_sensor_present": {
+        "name": "Externí senzor {slot} přítomnost"
+      },
+      "external_button_active": {
+        "name": "Externí tlačítko {slot} aktivní"
+      }
+    },
+    "button": {
+      "external_button": {
+        "name": "Externí tlačítko {slot}"
+      }
+    }
+  },
+  "issues": {
+    "migration_failed": {
+      "title": "Futura vyžaduje pozornost",
+      "description": "Zápisy jsou blokované nebo nebyla potvrzena deaktivace. Otevřete položku Futura a změňte konfiguraci. Zkontrolujte archivované volby nebo výslovně obnovte neúspěšnou deaktivaci tlačítka. Samotný restart nepotvrzuje úspěšnou deaktivaci."
+    },
+    "migration_needs_repair": {
+      "title": "Futura vyžaduje pozornost",
+      "description": "Zápisy jsou blokované nebo nebyla potvrzena deaktivace. Otevřete položku Futura a změňte konfiguraci. Zkontrolujte archivované volby nebo výslovně obnovte neúspěšnou deaktivaci tlačítka. Samotný restart nepotvrzuje úspěšnou deaktivaci."
+    },
+    "cleanup_failed": {
+      "title": "Futura vyžaduje pozornost",
+      "description": "Zápisy jsou blokované nebo nebyla potvrzena deaktivace. Otevřete položku Futura a změňte konfiguraci. Zkontrolujte archivované volby nebo výslovně obnovte neúspěšnou deaktivaci tlačítka. Samotný restart nepotvrzuje úspěšnou deaktivaci."
+    },
+    "transition_failed": {
+      "title": "Futura vyžaduje pozornost",
+      "description": "Zápisy jsou blokované nebo nebyla potvrzena deaktivace. Otevřete položku Futura a změňte konfiguraci. Zkontrolujte archivované volby nebo výslovně obnovte neúspěšnou deaktivaci tlačítka. Samotný restart nepotvrzuje úspěšnou deaktivaci."
+    },
+    "identity_mismatch": {
+      "title": "Futura vyžaduje pozornost",
+      "description": "Zápisy jsou blokované nebo nebyla potvrzena deaktivace. Otevřete položku Futura a změňte konfiguraci. Zkontrolujte archivované volby nebo výslovně obnovte neúspěšnou deaktivaci tlačítka. Samotný restart nepotvrzuje úspěšnou deaktivaci."
+    },
+    "runtime_storage_failed": {
+      "title": "Futura vyžaduje pozornost",
+      "description": "Zápisy jsou blokované nebo nebyla potvrzena deaktivace. Otevřete položku Futura a změňte konfiguraci. Zkontrolujte archivované volby nebo výslovně obnovte neúspěšnou deaktivaci tlačítka. Samotný restart nepotvrzuje úspěšnou deaktivaci."
+    }
+  },
+  "services": {
+    "activate_external_button": {
+      "name": "Aktivovat externí tlačítko",
+      "description": "Jednorázově aktivovat HA Control slot. Po výpadku se příkaz neopakuje.",
+      "fields": {
+        "duration_seconds": {
+          "name": "Doba",
+          "description": "Sekundy, od 1 do maxima nastaveného ve slotu (nejvýše 10800)."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "activation_failed": {
+      "message": "Aktivace nebyla potvrzena. Zkontrolujte výsledek deaktivace v diagnostice."
+    },
+    "button_unavailable": {
+      "message": "Tlačítko je zaneprázdněné nebo vyžaduje obnovu."
+    },
+    "invalid_duration": {
+      "message": "Doba je mimo nastavené limity slotu."
+    },
+    "slot_not_owned": {
+      "message": "Tento slot není zapnutý pro HA Control."
     }
   }
 }

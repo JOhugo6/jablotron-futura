@@ -1,83 +1,55 @@
 # Jablotron Futura Bridge for Home Assistant
 
-Custom integration for Jablotron Futura over Modbus TCP with:
+A local Modbus TCP integration for **Futura L/M/S**, with native Home Assistant setup in Czech and English, eight external sensor slots, eight external button slots, standard controls and redacted diagnostics. **Futura L+ is not supported** and is rejected before runtime writes.
 
-- Home Assistant UI config flow
-- profile-aware Modbus access for `futura_lms` and `futura_lp`
-- external sensor bridge from HA entities to `ext_sens_*` slots
-- diagnostics export
-- Czech and English flow translations
-- HACS-ready repository structure
-- local Docker stack with Home Assistant and Modbus simulator
+## Installation and compatibility
 
-## HACS install
+The integration uses the HACS integration layout. This working v3 candidate has been tested with **Home Assistant 2025.9.0** and its pinned dependency **pymodbus 3.11.1**. Other HA versions and physical firmware combinations have not been qualified by these software tests.
 
-1. Add this repository as a custom repository in HACS.
-2. Choose category `Integration`.
-3. Install `Jablotron Futura Bridge`.
-4. Restart Home Assistant.
-5. Go to `Settings -> Devices & Services -> Add Integration`.
-6. Search for `Jablotron Futura Bridge`.
+Once a reviewed v3 release is published, add this repository to HACS as a custom repository of category **Integration**, install **Jablotron Futura Bridge**, restart HA, and select **Settings → Devices & services → Add integration**. The local working candidate is not automatically available through GitHub/HACS. Installer tests use actual HACS 2.0.5 installation/upgrade code with controlled archive downloads; they do not establish publication, HACS onboarding or a live GitHub download.
 
-## Initial setup
+The device must already be commissioned. The integration does not perform MyCOMPANY commissioning, firmware updates or service-register configuration. Modbus readback confirms register values, not the physical effect on ventilation; IN1/IN2, emergency states and the unit's own regulation can affect the result.
 
-During config flow provide:
+## Setup
 
-- `host`
-- `port`
-- `unit_id`
-- `profile_mode`
-- `scan_interval_s`
+1. Enter the unit's host, port (default 502) and Modbus unit ID (default 1). The connection step performs read-only identity and supported-profile checks.
+2. Review the reported identity and detected VarioBreeze support, then choose whether to configure zones. The detected bit indicates support, not proof of physical installation.
+3. If using zones, edit the eight supply and eight exhaust zone records, names, areas and existing equipment metadata, then review readings. Zone bindings are organizational; changing a binding does not change the unit's physical interpretation of a register slot.
+4. Configure sensor slots 1–8 and button slots 1–8. Both lists are available with or without VarioBreeze.
+5. Review the summary and confirm saving. Runtime intervals and bridge settings are available through the runtime settings step. Editing a detail only changes the draft; cancellation does not save it.
 
-The integration validates connectivity during setup. In `auto` mode it performs a read-only profile probe and stores the resolved profile for runtime use.
+For each enabled sensor slot choose **None**, **Read**, or **HA Write-back**. Read observes the unit's holding registers. HA Write-back sends values from `sensor`, `number` or `input_number` entities and also reads them back. It requires at least one source: temperature, relative humidity, CO₂ or floor temperature. Temperatures accept Celsius or Fahrenheit, humidity requires percent and CO₂ requires ppm. A source without a unit needs an explicit target-unit assumption. Missing, invalid or stale measurements are invalidated rather than replaced by apparently valid zeroes.
 
-## External sensor bridge
+For buttons choose **None**, **Futura** (read-only), or **HA Control**. HA Control creates an HA button independently of physical-button discovery. Configure Boost or Digestor, the default duration (180 s or 300 s) and the permitted maximum (up to 10800 s). Selecting HA Write-back or HA Control is the ownership choice; there is no additional ownership checkbox. Avoid another client writing the same slots.
 
-Options flow provides:
+The sensor bridge switch stops sensor writes; HA-controlled buttons are independent. Leaving an owned mode or unloading attempts a bounded deactivation. If a button's cleanup fails, it remains unavailable until an explicit successful recovery through reconfiguration. Reconnection does not replay an activation.
 
-- global bridge configuration
-- slots `1..8`
-- entity mapping for:
-  - temperature
-  - humidity
-  - CO2
-  - floor temperature
+## Editing and upgrades
 
-The bridge writes one contiguous six-register Modbus block per slot and uses invalid bits when a source value is unavailable, stale, non-numeric, or out of range.
+Use the integration entry's **Reconfigure** action for the connection, topology, sources, modes and slot bindings. **Options** provides runtime settings, names/areas and timers, with a route to full reconfiguration. Both use a draft and final confirmation. Changing the address of the same verified unit preserves entity identity; replacing it with a different unit is rejected.
 
-## Local development
+Version 1/2 entries migrate to the canonical version 3 model. Original choices are archived. Conflicting mappings or invalid saved settings open a repair path and block all writes until explicitly resolved; valid reads can continue. A repair must not silently overwrite an occupied disabled slot. The repair UI shows the original choices and any temporary defaults.
 
-Local stack is in [dev/homeassistant/README.md](dev/homeassistant/README.md).
+## External button action
 
-Quick start:
+Use ordinary `button.press` to apply a configured default duration. For an explicit duration, call `jablotron_futura.activate_external_button` targeting an **HA Control external button entity**:
 
-```powershell
-cd dev/homeassistant
-docker compose up --build
+```yaml
+action: jablotron_futura.activate_external_button
+target:
+  entity_id: button.your_futura_external_button
+data:
+  duration_seconds: 180
 ```
 
-Then add the integration in Home Assistant with:
+The required `duration_seconds` field is an integer from 1 to 10800, additionally limited by that slot's configured maximum. Futura-owned slots and standard fixed-action buttons cannot be activated through this action. An acknowledged write is not a guarantee of physical ventilation.
 
-- `host`: `futura-modbus-sim`
-- `port`: `502`
-- `unit_id`: `1`
+## Development and verification
 
-Simulator status endpoint:
+The local engineering workspace contains an [isolated validation Runbook](docs/PRDs/futura-ha-zone-setup-v3/Runbook.md). Its unit, native HA, fault and HACS harnesses create their own disposable environments; they do not restart a shared user stack.
 
-- `http://localhost:18080/status`
+Those `docs/`, `tests/` and local harness artifacts follow the workspace's existing ignore policy and may not be included in a published repository or HACS package. The installable integration is under `custom_components/jablotron_futura/`. Do not treat a missing local harness link in a packaged release as installation content.
 
-Reconnect smoke test for the persistent `T-10 / FR-7 / AC-9` scenario:
+Physical sensor influence, six-word write acceptance on supported firmware, button behavior without physical hardware, expiry/deactivation and humidity target scaling still require hardware qualification before corresponding release claims.
 
-```powershell
-python dev/homeassistant/reconnect_smoke.py
-```
 
-The smoke test expects an already active slot 1 in the local HA stack, restarts
-`jablotron-futura-bridge-modbus-sim`, and waits for a fresh post-reconnect write
-to reappear in the simulator status payload.
-
-## Notes
-
-- The integration does not replace MyCOMPANY commissioning.
-- Analog control via `IN1/IN2` may override the practical effect of CO2/external sensor writes.
-- Emergency shutdown may suppress normal runtime behavior independently of Home Assistant.

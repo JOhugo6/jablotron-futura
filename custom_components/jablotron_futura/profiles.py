@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Final
 
-from .const import PROFILE_FUTURA_LMS, PROFILE_FUTURA_LP
+from .const import PROFILE_FUTURA_LMS
 
 STANDARD_INPUT_SEGMENTS: Final[tuple[tuple[int, int], ...]] = (
     (14, 8),
@@ -22,6 +22,11 @@ ALFA_SLOT_SIZE: Final = 10
 ALFA_READ_COUNT: Final = 6
 
 STANDARD_INPUT_KEYS: Final[dict[str, int]] = {
+    "fact_device_id": 0,
+    "fact_serial_number": 1,
+    "fact_ethernet_mac": 3,
+    "fact_hw_revision": 6,
+    "firm_revision": 8,
     "variant_raw": 14,
     "fut_config_raw": 15,
     "modes_bits_raw": 16,
@@ -46,7 +51,11 @@ STANDARD_INPUT_KEYS: Final[dict[str, int]] = {
     "fan_rpm_supply": 47,
     "fan_rpm_exhaust": 48,
     "rtc_batt_voltage": 52,
+    "connected_supply_valves_bits": 70,
+    "connected_exhaust_valves_bits": 72,
+    "connected_button_bits": 74,
     "alfa_connected_bits": 75,
+    "vzv_identify_bits": 80,
 }
 
 STANDARD_HOLDING_KEYS: Final[dict[str, int]] = {
@@ -76,6 +85,7 @@ class RegisterProfile:
     profile_id: str
     profile_label: str
     ext_sensor_slot1_base: int
+    ext_button_slot1_base: int
     standard_input_segments: tuple[tuple[int, int], ...] = STANDARD_INPUT_SEGMENTS
     standard_holding_segment: tuple[int, int] = STANDARD_HOLDING_SEGMENT
     standard_input_keys: dict[str, int] = field(
@@ -116,6 +126,14 @@ class RegisterProfile:
     def external_sensor_block(self, slot_index: int) -> tuple[int, int]:
         return (self.external_sensor_base(slot_index), 6)
 
+    def external_button_base(self, slot_index: int) -> int:
+        if slot_index < 1 or slot_index > 8:
+            raise ValueError(f"Unsupported external button slot: {slot_index}")
+        return self.ext_button_slot1_base + (slot_index - 1) * 10
+
+    def external_button_block(self, slot_index: int) -> tuple[int, int]:
+        return (self.external_button_base(slot_index), 4)
+
     def alfa_block(self, slot_index: int) -> tuple[int, int]:
         """Return the register block for one ALFA sensor slot."""
         if slot_index < 1 or slot_index > 8:
@@ -131,11 +149,7 @@ PROFILES: Final[dict[str, RegisterProfile]] = {
         profile_id=PROFILE_FUTURA_LMS,
         profile_label="Futura L/M/S",
         ext_sensor_slot1_base=300,
-    ),
-    PROFILE_FUTURA_LP: RegisterProfile(
-        profile_id=PROFILE_FUTURA_LP,
-        profile_label="Futura L+",
-        ext_sensor_slot1_base=100,
+        ext_button_slot1_base=400,
     ),
 }
 

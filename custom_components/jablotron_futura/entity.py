@@ -9,6 +9,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import FuturaCoordinator
 from .identity import make_device_identifier, make_device_name, make_entity_unique_id
+from .models import DeviceIdentity
 from .models import FuturaConfigEntry
 
 
@@ -32,12 +33,36 @@ class FuturaEntity(CoordinatorEntity[FuturaCoordinator]):
             entry.entry_id,
             unique_suffix,
         )
-        self._attr_device_info = DeviceInfo(
-            identifiers={make_device_identifier(entry.unique_id, entry.entry_id)},
-            manufacturer="Jablotron",
-            model=coordinator.profile.profile_label,
-            name=make_device_name(coordinator.unit_id),
+        if entry.data.get("identity_token"):
+            self._attr_unique_id = f"{entry.data['identity_token']}_{unique_suffix}"
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        """Build device metadata from the latest coordinator identity snapshot."""
+        identity = DeviceIdentity.from_mapping(
+            self.coordinator.data.get("device_identity", self._entry.data)
         )
+        info: DeviceInfo | None = DeviceInfo(
+            identifiers={
+                ("jablotron_futura", "controller_" + self._entry.data["identity_token"])
+            }
+            if self._entry.data.get("identity_token")
+            else {make_device_identifier(self._entry.unique_id, self._entry.entry_id)},
+            manufacturer="Jablotron",
+            model=identity.device_variant or self.coordinator.profile.profile_label,
+            name=make_device_name(self.coordinator.unit_id),
+            hw_version=identity.hardware_revision or None,
+            sw_version=identity.firmware_revision or None,
+            serial_number=identity.serial_number or None,
+        )
+        domain = getattr(getattr(self, "platform", None), "domain", None)
+        if domain is None and (entity_id := getattr(self, "entity_id", None)):
+            domain = entity_id.partition(".")[0]
+        visibility = getattr(self._entry.runtime_data, "sensor_visibility", None)
+        if visibility:
+            info = visibility.device_info(self.unique_id, info, domain)
+        visibility = getattr(self._entry.runtime_data, "button_visibility", None)
+        return visibility.device_info(self.unique_id, info, domain) if visibility else info
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

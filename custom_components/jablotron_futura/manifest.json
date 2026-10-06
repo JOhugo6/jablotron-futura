@@ -1,8 +1,12 @@
 {
   "domain": "jablotron_futura",
   "name": "Jablotron Futura Bridge",
-  "version": "0.1.0",
-  "requirements": ["pymodbus>=3.6,<4"],
+  "codeowners": ["@JOhugo6"],
+  "config_flow": true,
+  "documentation": "https://github.com/JOhugo6/jablotron-futura",
+  "integration_type": "device",
   "iot_class": "local_polling",
-  "config_flow": true
+  "issue_tracker": "https://github.com/JOhugo6/jablotron-futura/issues",
+  "requirements": ["pymodbus==3.11.1"],
+  "version": "0.3.0"
 }

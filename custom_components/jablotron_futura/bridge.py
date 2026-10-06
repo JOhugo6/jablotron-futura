@@ -5,32 +5,33 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import logging
+import asyncio
+import time
 from typing import Any
 
 from homeassistant.const import ATTR_UNIT_OF_MEASUREMENT
 from homeassistant.core import HomeAssistant, State, callback
-from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
-from homeassistant.helpers.update_coordinator import UpdateFailed
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
 from .const import (
-    CONF_CO2_ENTITY_ID,
-    CONF_ENABLED,
-    CONF_FLOOR_TEMPERATURE_ENTITY_ID,
-    CONF_HUMIDITY_ENTITY_ID,
-    CONF_SLOT_NAME,
-    CONF_TEMPERATURE_ENTITY_ID,
-    LOG_LEVEL_DEBUG,
     METRIC_CO2,
     METRIC_FLOOR_TEMPERATURE,
     METRIC_HUMIDITY,
     METRIC_TEMPERATURE,
     METRIC_TO_ENTITY_KEY,
     METRIC_TO_INVALID_BIT,
-    SLOT_COUNT,
 )
 from .coordinator import FuturaCoordinator
-from .models import BridgeOptions, ExternalSensorSlotConfig, FuturaConfigEntry, SlotRuntimeState, load_slot_configs
+from .models import (
+    BridgeOptions,
+    ExternalSensorSlotConfig,
+    FuturaConfigEntry,
+    SlotRuntimeState,
+    load_v3_options,
+    v3_sensor_configs,
+)
+from .validation import normalize_metric_value
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,15 +60,15 @@ class SlotPayload:
         return [
             self.present,
             self.invalidate_mask,
-            self.temperature_raw,
+            self.temperature_raw & 0xFFFF,
             self.humidity_raw,
             self.co2_raw,
-            self.floor_temperature_raw,
+            self.floor_temperature_raw & 0xFFFF,
         ]
 
 
 class ExternalSensorBridge:
-    """Runtime bridge from HA entity states to Modbus ext_sens_* writes."""
+    """One coalescing writer; canonical options only and no stale snapshots."""
 
     def __init__(
         self,
@@ -75,235 +76,213 @@ class ExternalSensorBridge:
         entry: FuturaConfigEntry,
         coordinator: FuturaCoordinator,
     ) -> None:
-        self.hass = hass
-        self.entry = entry
-        self.coordinator = coordinator
-        self.options = BridgeOptions.from_mapping(dict(entry.options))
-        self.slot_configs = load_slot_configs(dict(entry.options))
+        self.hass, self.entry, self.coordinator = hass, entry, coordinator
+        self.config = load_v3_options(dict(entry.options))
+        runtime = self.config["runtime"]
+        self.options = BridgeOptions.from_mapping(runtime)
+        self.interval = runtime["write_interval_ms"] / 1000
+        self.slot_configs = v3_sensor_configs(self.config)
         self.slot_states = {
-            slot_index: SlotRuntimeState(slot_index=slot_index)
-            for slot_index in range(1, SLOT_COUNT + 1)
+            slot: SlotRuntimeState(slot_index=slot) for slot in range(1, 9)
         }
-        self._dirty_slots = set(range(1, SLOT_COUNT + 1))
-        self._unitless_warned_entities: set[tuple[str, str]] = set()
-        self._listener_remove: list[callable] = []
-        self._timer_remove = None
-        self._coordinator_listener_remove = None
+        self._dirty_slots = set(range(1, 9))
+        self._resync_slots = set(range(1, 9))
+        self._owned: set[int] = set()
+        self._attempts: dict[int, float] = {}
+        self._successes: dict[int, float] = {}
+        self._generation = 0
+        self._frozen = False
+        self._task = None
+        self._listener_remove = []
         self._seen_reconnect_generation = coordinator.reconnect_generation
+        self._worker_lock = asyncio.Lock()
 
     async def async_start(self) -> None:
-        """Start bridge listeners."""
-        self._subscribe_entity_listeners()
-        self._coordinator_listener_remove = self.coordinator.async_add_listener(
-            self._handle_coordinator_update
+        self._frozen = False
+        ids = sorted(
+            {entity for config in self.slot_configs for entity in config.entity_ids()}
         )
-        self._timer_remove = async_track_time_interval(
-            self.hass,
-            self._handle_timer,
-            timedelta(seconds=self.options.bridge_update_interval_s),
-        )
-        await self.async_process_pending("startup")
-
-    async def async_stop(self) -> None:
-        """Stop bridge listeners."""
-        for remove in self._listener_remove:
-            remove()
-        self._listener_remove.clear()
-
-        if self._coordinator_listener_remove:
-            self._coordinator_listener_remove()
-            self._coordinator_listener_remove = None
-
-        if self._timer_remove:
-            self._timer_remove()
-            self._timer_remove = None
-
-    def diagnostics_snapshot(self) -> dict[str, Any]:
-        """Return bridge diagnostics snapshot."""
-        warnings: list[str] = [
-            "This integration does not replace MyCOMPANY commissioning.",
-            "Analog IN1/IN2 control may override CO2-driven behavior.",
-        ]
-        if self.coordinator.data.get("emergency_shutdown_active"):
-            warnings.append("Emergency shutdown warning is active.")
-
-        return {
-            "bridge_options": self.options.as_dict(),
-            "slot_configs": [
-                {
-                    "slot_index": slot_config.slot_index,
-                    "enabled": slot_config.enabled,
-                    "slot_name": slot_config.slot_name,
-                    CONF_TEMPERATURE_ENTITY_ID: slot_config.temperature_entity_id,
-                    CONF_HUMIDITY_ENTITY_ID: slot_config.humidity_entity_id,
-                    CONF_CO2_ENTITY_ID: slot_config.co2_entity_id,
-                    CONF_FLOOR_TEMPERATURE_ENTITY_ID: slot_config.floor_temperature_entity_id,
-                }
-                for slot_config in self.slot_configs
-            ],
-            "slot_states": {
-                slot_index: runtime_state.as_dict()
-                for slot_index, runtime_state in self.slot_states.items()
-            },
-            "operational_warnings": warnings,
-            "resolved_profile": self.coordinator.profile.profile_id,
-        }
-
-    @callback
-    def _handle_timer(self, _now: datetime) -> None:
-        self.hass.async_create_task(self.async_process_pending("timer"))
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        if self._sync_connection_state():
-            self.hass.async_create_task(self.async_process_pending("reconnect"))
-
-    @callback
-    def _sync_connection_state(self) -> bool:
-        """Track reconnects using a generation that survives missed listener windows."""
-        if self._seen_reconnect_generation == self.coordinator.reconnect_generation:
-            return False
-
-        self._seen_reconnect_generation = self.coordinator.reconnect_generation
-        self._mark_slots_dirty(range(1, SLOT_COUNT + 1), "reconnect")
-        return True
-
-    def _subscribe_entity_listeners(self) -> None:
-        entity_ids = sorted(
-            {
-                entity_id
-                for slot_config in self.slot_configs
-                for entity_id in slot_config.entity_ids()
-            }
-        )
-        if not entity_ids:
-            return
-        self._listener_remove.append(
-            async_track_state_change_event(
-                self.hass,
-                entity_ids,
-                self._handle_source_state_change,
+        if ids:
+            self._listener_remove.append(
+                async_track_state_change_event(
+                    self.hass, ids, self._handle_source_state_change
+                )
             )
-        )
+        await self.async_process_pending("startup")
+        self._task = asyncio.create_task(self._loop())
+
+    async def _loop(self) -> None:
+        while not self._frozen:
+            await asyncio.sleep(min(1, self.interval))
+            await self.async_process_pending("timer")
 
     @callback
     def _handle_source_state_change(self, event: Any) -> None:
-        entity_id = event.data["entity_id"]
-        affected_slots = [
-            slot_config.slot_index
-            for slot_config in self.slot_configs
-            if entity_id in slot_config.entity_ids()
-        ]
-        if affected_slots:
-            self._mark_slots_dirty(affected_slots, "source_changed")
+        for config in self.slot_configs:
+            if event.data["entity_id"] in config.entity_ids():
+                self._dirty_slots.add(config.slot_index)
 
-    def _mark_slots_dirty(self, slot_indexes: Any, reason: str) -> None:
-        for slot_index in slot_indexes:
-            self._dirty_slots.add(int(slot_index))
-            self.slot_states[int(slot_index)].pending_write_reason = reason
+    async def async_freeze(self) -> None:
+        self._frozen = True
+        self._generation += 1
+        for remove in self._listener_remove:
+            remove()
+        self._listener_remove.clear()
+        if self._task:
+            self._task.cancel()
+            await asyncio.gather(self._task, return_exceptions=True)
+            self._task = None
+        async with self._worker_lock:
+            pass
 
-    async def async_process_pending(self, trigger_reason: str) -> None:
-        """Process pending or watchdog-triggered writes."""
-        if self._sync_connection_state():
-            trigger_reason = "reconnect"
+    async def async_resume(self) -> None:
+        self._dirty_slots.update(range(1, 9))
+        self._resync_slots.update(range(1, 9))
+        await self.async_start()
 
-        now = dt_util.utcnow()
-        for slot_config in self.slot_configs:
-            slot_index = slot_config.slot_index
-            runtime_state = self.slot_states[slot_index]
-            force_due = bool(
-                runtime_state.last_successful_write_at
-                and (
-                    now - runtime_state.last_successful_write_at
-                ).total_seconds()
-                >= self.options.force_resync_every_s
-            )
-            needs_processing = (
-                slot_index in self._dirty_slots
-                or runtime_state.last_successful_write_at is None
-                or force_due
-            )
-            if not needs_processing:
-                continue
-
-            if runtime_state.last_attempt_at and (
-                now - runtime_state.last_attempt_at
-            ).total_seconds() < self.options.bridge_update_interval_s:
-                continue
-
-            reason = runtime_state.pending_write_reason or (
-                "watchdog" if force_due else trigger_reason
-            )
-            force_write = (
-                force_due
-                or reason == "reconnect"
-                or runtime_state.last_error is not None
-            )
-            payload = build_slot_payload(
-                slot_config=slot_config,
-                options=self.options,
-                now=now,
-                hass=self.hass,
-            )
-            for metric, entity_id in payload.unitless_entities:
-                if (metric, entity_id) not in self._unitless_warned_entities:
-                    _LOGGER.warning(
-                        "Slot %s uses unitless entity %s for %s; assuming target units already match Futura",
-                        slot_index,
-                        entity_id,
-                        metric,
-                    )
-                    self._unitless_warned_entities.add((metric, entity_id))
-
-            same_payload = payload.registers == runtime_state.last_payload
-            if (
-                same_payload
-                and self.options.write_on_change_only
-                and runtime_state.last_successful_write_at is not None
-                and not force_write
-            ):
-                runtime_state.pending_write_reason = None
-                runtime_state.source_snapshot = payload.source_snapshot
-                self._dirty_slots.discard(slot_index)
-                continue
-
-            runtime_state.last_attempt_at = now
-            runtime_state.last_reason = reason
+    async def async_stop(self, clear: bool = True) -> None:
+        await self.async_freeze()
+        if not clear or self.config.get("migration_needs_repair"):
+            return
+        pending = sorted(self._owned)
+        self._owned.clear()  # one attempt even if caller cancels or unload retries
+        for index, slot in enumerate(pending):
+            result = "ok"
             try:
                 await self.coordinator.async_write_external_sensor_block(
-                    slot_index, payload.registers
+                    slot, [0] * 6, cleanup=True
                 )
-            except UpdateFailed as err:
-                runtime_state.last_error = str(err)
-                runtime_state.pending_write_reason = reason
-                _LOGGER.warning(
-                    "Bridge write for slot %s failed: %s",
-                    slot_index,
-                    err,
-                )
-                continue
-
-            runtime_state.present = payload.present
-            runtime_state.invalidate_mask = payload.invalidate_mask
-            runtime_state.temperature_raw = payload.temperature_raw
-            runtime_state.humidity_raw = payload.humidity_raw
-            runtime_state.co2_raw = payload.co2_raw
-            runtime_state.floor_temperature_raw = payload.floor_temperature_raw
-            runtime_state.last_payload = payload.registers
-            runtime_state.last_successful_write_at = now
-            runtime_state.last_error = None
-            runtime_state.pending_write_reason = None
-            runtime_state.source_snapshot = payload.source_snapshot
-            self._dirty_slots.discard(slot_index)
-
-            log_method = _LOGGER.debug if self.options.log_level_bridge == LOG_LEVEL_DEBUG else _LOGGER.info
-            log_method(
-                "Bridge wrote slot %s via profile %s to %s: %s",
-                slot_index,
-                self.coordinator.profile.profile_id,
-                self.coordinator.profile.external_sensor_block(slot_index)[0],
-                payload.registers,
+            except asyncio.CancelledError:
+                for skipped in pending[index:]:
+                    await self.coordinator.async_record_clear(
+                        {
+                            "kind": "sensor",
+                            "slot": skipped,
+                            "generation": self._generation,
+                            "result": "skipped_timeout",
+                            "error_code": "deadline",
+                        }
+                    )
+                raise
+            except Exception:
+                result = "failed"
+            await self.coordinator.async_record_clear(
+                {
+                    "kind": "sensor",
+                    "slot": slot,
+                    "generation": self._generation,
+                    "result": result,
+                    "error_code": None if result == "ok" else "clear_failed",
+                }
             )
+
+    def diagnostics_snapshot(self) -> dict[str, Any]:
+        return {
+            "runtime": self.config["runtime"],
+            "slots": self.config["sensor_slots"],
+            "slot_states": {
+                str(slot): state.as_dict() for slot, state in self.slot_states.items()
+            },
+            "owned": sorted(self._owned),
+            "generation": self._generation,
+        }
+
+    def _slot_write_enabled(self, config: ExternalSensorSlotConfig) -> bool:
+        return bool(
+            not self._frozen
+            and not self.config.get("migration_needs_repair")
+            and self.options.bridge_enabled
+            and config.enabled
+        )
+
+    async def async_process_pending(self, trigger_reason: str) -> None:
+        if self._frozen or self._worker_lock.locked():
+            return
+        async with self._worker_lock:
+            generation = self._generation
+            reconnect = (
+                self._seen_reconnect_generation != self.coordinator.reconnect_generation
+            )
+            self._seen_reconnect_generation = self.coordinator.reconnect_generation
+            if reconnect:
+                self._dirty_slots.update(range(1, 9))
+                self._resync_slots.update(range(1, 9))
+            for config in self.slot_configs:
+                slot = config.slot_index
+                if generation != self._generation or not self._slot_write_enabled(
+                    config
+                ):
+                    self._dirty_slots.discard(slot)
+                    continue
+                now = dt_util.utcnow()
+                monotonic = time.monotonic()
+                state = self.slot_states[slot]
+                payload = build_slot_payload(
+                    config,
+                    self.options,
+                    now,
+                    self.hass,
+                    self.config["sensor_slots"][str(slot)]["unitless_assumptions"],
+                )
+                state.source_snapshot = payload.source_snapshot
+                # Recompute every tick: freshness can change without any HA event.
+                due = (
+                    monotonic - self._attempts.get(slot, float("-inf")) >= self.interval
+                )
+                force = (
+                    slot in self._resync_slots
+                    or monotonic - self._successes.get(slot, float("-inf"))
+                    >= self.options.force_resync_every_s
+                )
+                changed = payload.registers != state.last_payload
+                if not due or not (
+                    changed
+                    or force
+                    or reconnect
+                    or slot in self._dirty_slots
+                    or not self.options.write_on_change_only
+                ):
+                    continue
+                if (
+                    not changed
+                    and self.options.write_on_change_only
+                    and not force
+                    and not reconnect
+                    and state.last_error is None
+                ):
+                    self._dirty_slots.discard(slot)
+                    continue
+                self._attempts[slot] = monotonic
+                state.last_attempt_at = now
+                state.last_reason = trigger_reason
+                self._owned.add(slot)
+                try:
+                    await self.coordinator.async_write_external_sensor_block(
+                        slot, payload.registers
+                    )
+                except Exception:
+                    state.last_error = "write_failed"
+                    self._dirty_slots.add(slot)
+                    continue
+                state.last_payload = payload.registers
+                state.last_successful_write_at = now
+                state.last_error = None
+                state.present, state.invalidate_mask = (
+                    payload.present,
+                    payload.invalidate_mask,
+                )
+                state.temperature_raw, state.humidity_raw = (
+                    payload.temperature_raw,
+                    payload.humidity_raw,
+                )
+                state.co2_raw, state.floor_temperature_raw = (
+                    payload.co2_raw,
+                    payload.floor_temperature_raw,
+                )
+                self._successes[slot] = time.monotonic()
+                self._resync_slots.discard(slot)
+                state.pending_write_reason = None
+                self._dirty_slots.discard(slot)
 
 
 def build_slot_payload(
@@ -311,6 +290,7 @@ def build_slot_payload(
     options: BridgeOptions,
     now: datetime,
     hass: HomeAssistant,
+    assumptions: dict[str, str | None] | None = None,
 ) -> SlotPayload:
     """Build the ext_sens payload for one slot."""
     if not options.bridge_enabled or not slot_config.enabled:
@@ -350,7 +330,9 @@ def build_slot_payload(
     for metric, entity_key in METRIC_TO_ENTITY_KEY.items():
         entity_id = getattr(slot_config, entity_key)
         state = hass.states.get(entity_id) if entity_id else None
-        result = _normalize_metric(metric, state, options, now)
+        result = _normalize_metric(
+            metric, state, options, now, (assumptions or {}).get(metric)
+        )
         source_snapshot[metric] = result.snapshot
         if result.unitless_entity:
             unitless_entities.append((metric, result.unitless_entity))
@@ -384,116 +366,27 @@ def _normalize_metric(
     state: State | None,
     options: BridgeOptions,
     now: datetime,
+    assumption: str | None = None,
 ) -> _MetricResult:
     if state is None:
-        return _MetricResult(raw_value=None, snapshot={"status": "missing"})
-
+        return _MetricResult(None, {"status": "missing"})
     if state.state.lower() in UNKNOWN_STATES:
-        return _MetricResult(raw_value=None, snapshot={"status": state.state.lower()})
-
-    if now - state.last_updated > timedelta(seconds=options.stale_after_s):
-        return _MetricResult(
-            raw_value=None,
-            snapshot={
-                "status": "stale",
-                "last_updated": state.last_updated.isoformat(),
-            },
-        )
-
+        return _MetricResult(None, {"status": state.state.lower()})
+    reported = getattr(state, "last_reported", state.last_updated)
     try:
-        numeric_value = float(state.state)
-    except (TypeError, ValueError):
+        age = now - reported
+    except (TypeError, ValueError, OverflowError):
+        return _MetricResult(None, {"status": "invalid_timestamp"})
+    if age > timedelta(seconds=options.stale_after_s):
         return _MetricResult(
-            raw_value=None,
-            snapshot={"status": "non_numeric", "state": state.state},
+            None, {"status": "stale", "last_reported": reported.isoformat()}
         )
-
     unit = state.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
-    unitless_entity = state.entity_id if not unit else None
-    if metric in (METRIC_TEMPERATURE, METRIC_FLOOR_TEMPERATURE):
-        return _normalize_temperature_metric(
-            numeric_value, unit, state, unitless_entity
-        )
-    if metric == METRIC_HUMIDITY:
-        return _normalize_humidity_metric(
-            numeric_value, unit, state, unitless_entity
-        )
-    return _normalize_co2_metric(
-        numeric_value, unit, state, unitless_entity
-    )
-
-
-def _normalize_temperature_metric(
-    value: float,
-    unit: Any,
-    state: State,
-    unitless_entity: str | None,
-) -> _MetricResult:
-    normalized = value
-    if unit in CELSIUS_UNITS or unit is None:
-        pass
-    elif unit in FAHRENHEIT_UNITS:
-        normalized = (value - 32.0) * 5.0 / 9.0
-    else:
-        return _MetricResult(
-            raw_value=None,
-            snapshot={"status": "invalid_unit", "unit": unit},
-        )
-
-    if normalized < -20.0 or normalized > 100.0:
-        return _MetricResult(
-            raw_value=None,
-            snapshot={"status": "out_of_range", "value": normalized},
-        )
-
+    normalized = normalize_metric_value(metric, state.state, unit, assumption)
+    if normalized is None:
+        return _MetricResult(None, {"status": "invalid", "unit": unit})
+    scale = 10 if metric in (METRIC_TEMPERATURE, METRIC_FLOOR_TEMPERATURE) else 1
     return _MetricResult(
-        raw_value=int(round(normalized * 10)),
-        snapshot={"status": "ok", "state": state.state, "unit": unit},
-        unitless_entity=unitless_entity,
-    )
-
-
-def _normalize_humidity_metric(
-    value: float,
-    unit: Any,
-    state: State,
-    unitless_entity: str | None,
-) -> _MetricResult:
-    if unit not in ("%", None):
-        return _MetricResult(
-            raw_value=None,
-            snapshot={"status": "invalid_unit", "unit": unit},
-        )
-    if value < 0 or value > 100:
-        return _MetricResult(
-            raw_value=None,
-            snapshot={"status": "out_of_range", "value": value},
-        )
-    return _MetricResult(
-        raw_value=int(round(value)),
-        snapshot={"status": "ok", "state": state.state, "unit": unit},
-        unitless_entity=unitless_entity,
-    )
-
-
-def _normalize_co2_metric(
-    value: float,
-    unit: Any,
-    state: State,
-    unitless_entity: str | None,
-) -> _MetricResult:
-    if unit not in ("ppm", None):
-        return _MetricResult(
-            raw_value=None,
-            snapshot={"status": "invalid_unit", "unit": unit},
-        )
-    if value < 0 or value > 10000:
-        return _MetricResult(
-            raw_value=None,
-            snapshot={"status": "out_of_range", "value": value},
-        )
-    return _MetricResult(
-        raw_value=int(round(value)),
-        snapshot={"status": "ok", "state": state.state, "unit": unit},
-        unitless_entity=unitless_entity,
+        int(round(normalized * scale)),
+        {"status": "ok", "value": normalized, "unit": unit},
     )

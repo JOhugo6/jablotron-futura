@@ -63,7 +63,7 @@ NUMBER_DESCRIPTIONS = (
         name="Night hours",
         register_key="night_remaining_s",
         min_value=0,
-        max_value=10,
+        max_value=8,
         step=1,
         unit="h",
         multiplier=3600,
@@ -84,9 +84,14 @@ NUMBER_DESCRIPTIONS = (
 class FuturaRegisterNumber(FuturaEntity, NumberEntity):
     """Number backed by one holding register."""
 
-    def __init__(self, entry: FuturaConfigEntry, description: FuturaNumberDescription) -> None:
+    def __init__(
+        self, entry: FuturaConfigEntry, description: FuturaNumberDescription
+    ) -> None:
         super().__init__(
-            entry.runtime_data.coordinator, entry, description.name, f"number_{description.key}"
+            entry.runtime_data.coordinator,
+            entry,
+            description.name,
+            f"number_{description.key}",
         )
         self.description = description
         self._attr_native_min_value = description.min_value
@@ -112,5 +117,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     async_add_entities(
-        [FuturaRegisterNumber(entry, description) for description in NUMBER_DESCRIPTIONS]
+        [
+            FuturaRegisterNumber(entry, description)
+            for description in NUMBER_DESCRIPTIONS
+        ]
     )

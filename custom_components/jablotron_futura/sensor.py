@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+
 from dataclasses import dataclass
+
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -10,6 +12,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
+
 from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
@@ -18,11 +21,19 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfVolumeFlowRate,
 )
+
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
+
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+
 from .entity import FuturaEntity
+
 from .models import FuturaConfigEntry
+from .sensor_visibility import METRICS, eligible_metrics
+from .models import eligible_button_members
+
 
 PARALLEL_UPDATES = 0
 
@@ -30,6 +41,7 @@ PARALLEL_UPDATES = 0
 @dataclass(frozen=True, kw_only=True)
 class FuturaSensorDescription(SensorEntityDescription):
     key: str
+
     available_key: str | None = None
 
 
@@ -173,7 +185,9 @@ SENSOR_DESCRIPTIONS: tuple[FuturaSensorDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
     ),
     FuturaSensorDescription(key="boost_remaining_min", name="Boost minutes remaining"),
-    FuturaSensorDescription(key="circulation_remaining_min", name="Circulation minutes remaining"),
+    FuturaSensorDescription(
+        key="circulation_remaining_min", name="Circulation minutes remaining"
+    ),
     FuturaSensorDescription(key="night_remaining_h", name="Night hours remaining"),
     FuturaSensorDescription(key="party_remaining_h", name="Party hours remaining"),
     FuturaSensorDescription(key="away_begin_text", name="Away begin"),
@@ -192,19 +206,40 @@ class FuturaSimpleSensor(FuturaEntity, SensorEntity):
         entry: FuturaConfigEntry,
         description: FuturaSensorDescription,
     ) -> None:
-        super().__init__(entry.runtime_data.coordinator, entry, description.name, description.key)
+
+        super().__init__(
+            entry.runtime_data.coordinator, entry, description.name, description.key
+        )
+
         self.entity_description = description
 
     @property
-    def native_value(self):
+    def device_info(self) -> DeviceInfo | None:
+        discovery = getattr(self._entry.runtime_data, "alfa_discovery", None)
+        if discovery is not None and discovery.is_detached(self.unique_id):
+            return None
+        if discovery is not None and (
+            assigned := discovery.reassigned_device_info(self.unique_id)
+        ):
+            return assigned
+        return super().device_info
+
+    @property
+    def native_value(self) -> float | int | str | None:
+
         return self.coordinator.data.get(self.entity_description.key)
 
     @property
     def available(self) -> bool:
+
         available_key = self.entity_description.available_key
+
         if available_key is None:
             return super().available
-        return super().available and bool(self.coordinator.data.get(available_key, False))
+
+        return super().available and bool(
+            self.coordinator.data.get(available_key, False)
+        )
 
 
 async def async_setup_entry(
@@ -212,13 +247,44 @@ async def async_setup_entry(
     entry: FuturaConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+
     entities: list[SensorEntity] = [
         FuturaSimpleSensor(entry, description) for description in SENSOR_DESCRIPTIONS
     ]
 
-    for slot_index in range(1, 9):
+    # Add Futura-managed button timer sensors
+
+    entities.extend(_build_futura_button_timer_entities(entry))
+
+    entities.extend(
+        FuturaSlotSensor(entry, slot, metric)
+        for slot in range(1, 9)
+        for metric in eligible_metrics(entry.runtime_data.coordinator.config, slot)
+        if metric in METRICS
+    )
+
+    async_add_entities(entities)
+    from .alfa_discovery import AlfaDiscovery
+
+    discovery = AlfaDiscovery(
+        hass,
+        entry,
+        lambda slots: async_add_entities(_build_alfa_entities(entry, list(slots))),
+    )
+    entry.runtime_data.alfa_discovery = discovery
+    await discovery.async_start()
+
+
+def _build_alfa_entities(
+    entry: FuturaConfigEntry, slots: list[int]
+) -> list[SensorEntity]:
+    """Preserve the six original suffixes and measurement semantics per position."""
+    entities: list[SensorEntity] = []
+    for slot_index in slots:
         available_key = f"alfa_{slot_index}_available"
+
         prefix = f"ALFA {slot_index}"
+
         entities.extend(
             [
                 FuturaSimpleSensor(
@@ -279,4 +345,76 @@ async def async_setup_entry(
             ]
         )
 
-    async_add_entities(entities)
+    return entities
+
+
+class FuturaSlotSensor(FuturaEntity, SensorEntity):
+    """Measurements from strict, independently scheduled holding readback."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(
+        self, entry: FuturaConfigEntry, slot: int, metric: str, kind: str = "sensor"
+    ) -> None:
+
+        suffix = (
+            f"ext_btn_tm_{slot}" if kind == "button" else f"ext_sens_{metric}_{slot}"
+        )
+
+        super().__init__(entry.runtime_data.coordinator, entry, "", suffix)
+
+        self._slot, self._metric, self._kind = slot, metric, kind
+
+        del self._attr_name
+
+        self._attr_translation_key = (
+            "external_button_timer" if kind == "button" else f"external_{metric}"
+        )
+
+        self._attr_translation_placeholders = {"slot": str(slot)}
+
+        self._attr_native_unit_of_measurement = {
+            "temperature": "°C",
+            "floor_temperature": "°C",
+            "humidity": "%",
+            "co2": "ppm",
+            "remaining_seconds": "s",
+        }[metric]
+
+        self._attr_device_class = {
+            "temperature": SensorDeviceClass.TEMPERATURE,
+            "floor_temperature": SensorDeviceClass.TEMPERATURE,
+            "humidity": SensorDeviceClass.HUMIDITY,
+            "co2": SensorDeviceClass.CO2,
+            "remaining_seconds": SensorDeviceClass.DURATION,
+        }[metric]
+
+    @property
+    def available(self) -> bool:
+
+        return (
+            self.coordinator.readback_available(self._kind, self._slot)
+            and self.native_value is not None
+        )
+
+    @property
+    def native_value(self) -> float | int | str | None:
+
+        states = (
+            self.coordinator.sensor_readback
+            if self._kind == "sensor"
+            else self.coordinator.button_readback
+        )
+
+        return states.get(str(self._slot), {}).get(self._metric)
+
+
+def _build_futura_button_timer_entities(
+    entry: FuturaConfigEntry,
+) -> list[FuturaSlotSensor]:
+
+    return [
+        FuturaSlotSensor(entry, slot, "remaining_seconds", "button")
+        for slot in range(1, 9)
+        if "timer" in eligible_button_members(entry.runtime_data.coordinator.config, slot)
+    ]

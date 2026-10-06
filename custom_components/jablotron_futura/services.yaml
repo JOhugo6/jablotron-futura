@@ -1,0 +1,15 @@
+activate_external_button:
+  target:
+    entity:
+      integration: jablotron_futura
+      domain: button
+  fields:
+    duration_seconds:
+      required: true
+      example: 180
+      selector:
+        number:
+          min: 1
+          max: 10800
+          mode: box
+          unit_of_measurement: s

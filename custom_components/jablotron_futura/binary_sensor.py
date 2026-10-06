@@ -4,12 +4,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .entity import FuturaEntity
 from .models import FuturaConfigEntry
+from .sensor_visibility import eligible_metrics
+from .models import eligible_button_members
 
 PARALLEL_UPDATES = 0
 
@@ -56,7 +61,9 @@ class FuturaBitBinarySensor(FuturaEntity, BinarySensorEntity):
 
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
-    def __init__(self, entry: FuturaConfigEntry, description: BitEntityDescription) -> None:
+    def __init__(
+        self, entry: FuturaConfigEntry, description: BitEntityDescription
+    ) -> None:
         super().__init__(
             entry.runtime_data.coordinator,
             entry,
@@ -98,7 +105,9 @@ async def async_setup_entry(
 ) -> None:
     entities: list[BinarySensorEntity] = [
         FuturaSummaryBinarySensor(entry, "any_error", "Any error", "errors_bits_raw"),
-        FuturaSummaryBinarySensor(entry, "any_warning", "Any warning", "warnings_bits_raw"),
+        FuturaSummaryBinarySensor(
+            entry, "any_warning", "Any warning", "warnings_bits_raw"
+        ),
         FuturaSummaryBinarySensor(
             entry,
             "emergency_shutdown_active",
@@ -132,4 +141,54 @@ async def async_setup_entry(
         for bit, name in WARNING_BITS.items()
     )
 
+    # Add Futura-managed button active binary sensors
+    entities.extend(_build_futura_button_active_entities(entry))
+
+    entities.extend(
+        FuturaSlotBinarySensor(entry, slot, "sensor")
+        for slot in range(1, 9)
+        if "present" in eligible_metrics(entry.runtime_data.coordinator.config, slot)
+    )
     async_add_entities(entities)
+
+
+class FuturaSlotBinarySensor(FuturaEntity, BinarySensorEntity):
+    def __init__(self, entry: FuturaConfigEntry, slot: int, kind: str) -> None:
+        suffix = (
+            f"ext_btn_active_{slot}" if kind == "button" else f"ext_sens_present_{slot}"
+        )
+        super().__init__(entry.runtime_data.coordinator, entry, "", suffix)
+        self._slot, self._kind = slot, kind
+        del self._attr_name
+        self._attr_translation_key = (
+            "external_button_active" if kind == "button" else "external_sensor_present"
+        )
+        self._attr_translation_placeholders = {"slot": str(slot)}
+
+    @property
+    def available(self) -> bool:
+        return (
+            self.coordinator.readback_available(self._kind, self._slot)
+            and self.is_on is not None
+        )
+
+    @property
+    def is_on(self) -> bool | None:
+        states = (
+            self.coordinator.sensor_readback
+            if self._kind == "sensor"
+            else self.coordinator.button_readback
+        )
+        return states.get(str(self._slot), {}).get(
+            "present" if self._kind == "sensor" else "active"
+        )
+
+
+def _build_futura_button_active_entities(
+    entry: FuturaConfigEntry,
+) -> list[FuturaSlotBinarySensor]:
+    return [
+        FuturaSlotBinarySensor(entry, slot, "button")
+        for slot in range(1, 9)
+        if "active" in eligible_button_members(entry.runtime_data.coordinator.config, slot)
+    ]
