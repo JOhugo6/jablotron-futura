@@ -1,4 +1,4 @@
-"""Pinned HA persistence boundary for configuration ownership transitions."""
+"""HA persistence boundary for configuration ownership transitions."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ from collections.abc import Callable
 async def async_flush_config_entries(manager: Any) -> None:
     """Persist atomically and propagate errors before any ownership clear.
 
-    HA2025.9 public async_update_entry schedules a delayed save. Store.async_save
-    logs and swallows write errors. This narrow adapter intentionally uses the
-    inspected Store write primitive under its own lock. Keep its real-HA contract
-    test when raising the minimum supported HA version.
+    Public async_update_entry schedules a delayed save and Store.async_save logs
+    and swallows write errors. This adapter uses the inspected HA2025.9/2026.11
+    Store write primitives under their lock. Keep the real-HA contract tests when
+    extending supported HA versions.
     """
     await _async_save(manager._store, manager._data_to_save)
 
@@ -46,10 +46,18 @@ async def _async_save(store: Any, snapshot: Callable[[], Any]) -> None:
         # Clear only the work consumed by this snapshot. Another integration may
         # schedule a save while disk I/O is awaited; preserve that newer work.
         store._data = None
-        atomic_writes = store._atomic_writes
-        store._atomic_writes = True
+        # In HA2026.11, Store._io owns file I/O and its cache.
+        file_io = getattr(store, "_io", store)
+        atomic_writes = file_io._atomic_writes
+        file_io._atomic_writes = True
         try:
-            await store._async_write_data(store.path, payload)
+            if file_io is store:
+                await store._async_write_data(store.path, payload)
+            else:
+                await store._async_write_data(payload)
         finally:
-            store._atomic_writes = atomic_writes
-        store._manager.async_invalidate(store.key)
+            file_io._atomic_writes = atomic_writes
+        if file_io is store:
+            store._manager.async_invalidate(store.key)
+        else:
+            file_io.async_invalidate_cache()

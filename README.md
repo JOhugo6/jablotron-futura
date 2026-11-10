@@ -4,7 +4,9 @@ A local Modbus TCP integration for **Futura L/M/S**, with native Home Assistant 
 
 ## Installation and compatibility
 
-The integration uses the HACS integration layout. This working v3 candidate has been tested with **Home Assistant 2025.9.0** and its pinned dependency **pymodbus 3.11.1**. Other HA versions and physical firmware combinations have not been qualified by these software tests.
+The integration uses the HACS integration layout. Software checks cover **Home Assistant 2025.9.0 / pymodbus 3.11.1** and **Home Assistant 2026.11.1 / pymodbus 3.13.1**. The dependency requirement is `pymodbus>=3.11.1,<3.14.0`, allowing Home Assistant to select its own compatible shared version. Other HA versions and physical firmware combinations have not been qualified by these software tests.
+
+Version **0.3.0** pinned pymodbus 3.11.1, which prevents setup on HA 2026.11.1 because HA requires 3.13.1. Version **0.3.1** removes that conflict and adapts durable configuration storage to HA 2026.11. If setup reports HTTP 500 and the log reports these incompatible requirements, update the integration through HACS and restart Home Assistant before opening setup again.
 
 Once a reviewed v3 release is published, add this repository to HACS as a custom repository of category **Integration**, install **Jablotron Futura Bridge**, restart HA, and select **Settings → Devices & services → Add integration**. The local working candidate is not automatically available through GitHub/HACS. Installer tests use actual HACS 2.0.5 installation/upgrade code with controlled archive downloads; they do not establish publication, HACS onboarding or a live GitHub download.
 
