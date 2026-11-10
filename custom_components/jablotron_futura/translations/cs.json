@@ -645,6 +645,18 @@
       },
       "external_button_timer": {
         "name": "Externí tlačítko {slot} zbývající čas"
+      },
+      "named_external_temperature": {
+        "name": "{slot_name} teplota"
+      },
+      "named_external_humidity": {
+        "name": "{slot_name} vlhkost"
+      },
+      "named_external_co2": {
+        "name": "{slot_name} CO₂"
+      },
+      "named_external_floor_temperature": {
+        "name": "{slot_name} podlahová teplota"
       }
     },
     "binary_sensor": {
@@ -653,6 +665,9 @@
       },
       "external_button_active": {
         "name": "Externí tlačítko {slot} aktivní"
+      },
+      "named_external_sensor_present": {
+        "name": "{slot_name} přítomnost"
       }
     },
     "button": {

@@ -14,6 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .entity import FuturaEntity
 from .models import FuturaConfigEntry
 from .sensor_visibility import eligible_metrics
+from .sensor_names import external_sensor_name_translation
 from .models import eligible_button_members
 
 PARALLEL_UPDATES = 0
@@ -160,10 +161,15 @@ class FuturaSlotBinarySensor(FuturaEntity, BinarySensorEntity):
         super().__init__(entry.runtime_data.coordinator, entry, "", suffix)
         self._slot, self._kind = slot, kind
         del self._attr_name
-        self._attr_translation_key = (
-            "external_button_active" if kind == "button" else "external_sensor_present"
-        )
-        self._attr_translation_placeholders = {"slot": str(slot)}
+        if kind == "button":
+            self._attr_translation_key = "external_button_active"
+            self._attr_translation_placeholders = {"slot": str(slot)}
+        else:
+            self._attr_translation_key, self._attr_translation_placeholders = (
+                external_sensor_name_translation(
+                    self.coordinator.config, slot, "external_sensor_present"
+                )
+            )
 
     @property
     def available(self) -> bool:

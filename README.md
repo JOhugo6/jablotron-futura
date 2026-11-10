@@ -10,6 +10,8 @@ Version **0.3.0** pinned pymodbus 3.11.1, which prevents setup on HA 2026.11.1 b
 
 Version **0.3.2** corrects automatic VarioBreeze zone and equipment detection. After updating and restarting HA, close any unfinished setup wizard and start a new setup to regenerate its discovery defaults. Reconfiguration preserves saved zone names, areas and enabled/disabled choices.
 
+Version **0.3.3** uses each configured external sensor name for its measurements and presence entity. Saving a new slot name in the integration options updates these automatic names through the normal reload. Individual entity names set by the user keep priority, and existing entity IDs are preserved.
+
 Once a reviewed v3 release is published, add this repository to HACS as a custom repository of category **Integration**, install **Jablotron Futura Bridge**, restart HA, and select **Settings → Devices & services → Add integration**. The local working candidate is not automatically available through GitHub/HACS. Installer tests use actual HACS 2.0.5 installation/upgrade code with controlled archive downloads; they do not establish publication, HACS onboarding or a live GitHub download.
 
 The device must already be commissioned. The integration does not perform MyCOMPANY commissioning, firmware updates or service-register configuration. Modbus readback confirms register values, not the physical effect on ventilation; IN1/IN2, emergency states and the unit's own regulation can affect the result.

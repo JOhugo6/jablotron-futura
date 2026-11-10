@@ -32,6 +32,7 @@ from .entity import FuturaEntity
 
 from .models import FuturaConfigEntry
 from .sensor_visibility import METRICS, eligible_metrics
+from .sensor_names import external_sensor_name_translation
 from .models import eligible_button_members
 
 
@@ -367,11 +368,15 @@ class FuturaSlotSensor(FuturaEntity, SensorEntity):
 
         del self._attr_name
 
-        self._attr_translation_key = (
-            "external_button_timer" if kind == "button" else f"external_{metric}"
-        )
-
-        self._attr_translation_placeholders = {"slot": str(slot)}
+        if kind == "button":
+            self._attr_translation_key = "external_button_timer"
+            self._attr_translation_placeholders = {"slot": str(slot)}
+        else:
+            self._attr_translation_key, self._attr_translation_placeholders = (
+                external_sensor_name_translation(
+                    self.coordinator.config, slot, f"external_{metric}"
+                )
+            )
 
         self._attr_native_unit_of_measurement = {
             "temperature": "°C",
