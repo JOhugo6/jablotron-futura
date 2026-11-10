@@ -8,6 +8,8 @@ The integration uses the HACS integration layout. Software checks cover **Home A
 
 Version **0.3.0** pinned pymodbus 3.11.1, which prevents setup on HA 2026.11.1 because HA requires 3.13.1. Version **0.3.1** removes that conflict and adapts durable configuration storage to HA 2026.11. If setup reports HTTP 500 and the log reports these incompatible requirements, update the integration through HACS and restart Home Assistant before opening setup again.
 
+Version **0.3.2** corrects automatic VarioBreeze zone and equipment detection. After updating and restarting HA, close any unfinished setup wizard and start a new setup to regenerate its discovery defaults. Reconfiguration preserves saved zone names, areas and enabled/disabled choices.
+
 Once a reviewed v3 release is published, add this repository to HACS as a custom repository of category **Integration**, install **Jablotron Futura Bridge**, restart HA, and select **Settings → Devices & services → Add integration**. The local working candidate is not automatically available through GitHub/HACS. Installer tests use actual HACS 2.0.5 installation/upgrade code with controlled archive downloads; they do not establish publication, HACS onboarding or a live GitHub download.
 
 The device must already be commissioned. The integration does not perform MyCOMPANY commissioning, firmware updates or service-register configuration. Modbus readback confirms register values, not the physical effect on ventilation; IN1/IN2, emergency states and the unit's own regulation can affect the result.

@@ -711,10 +711,10 @@ class FuturaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         data["rtc_batt_voltage"] = _read_input_u16(
             input_blocks, self.profile, "rtc_batt_voltage"
         )
-        data["connected_supply_valves_bits"] = _read_input_u32(
+        data["connected_supply_valves_bits"] = _read_input_valves_u32(
             input_blocks, self.profile, "connected_supply_valves_bits"
         )
-        data["connected_exhaust_valves_bits"] = _read_input_u32(
+        data["connected_exhaust_valves_bits"] = _read_input_valves_u32(
             input_blocks, self.profile, "connected_exhaust_valves_bits"
         )
         data["connected_buttons_bits"] = _read_input_u16(
@@ -986,8 +986,8 @@ async def _async_read_topology_snapshot(
                 }[key]
                 data[f"alfa_{mapped}_{slot}"] = value
     return _build_topology_snapshot(
-        _u32_from(discovery, 70, 70),
-        _u32_from(discovery, 70, 72),
+        _connected_valves_u32_from(discovery, 70, 70),
+        _connected_valves_u32_from(discovery, 70, 72),
         discovery[4],
         discovery[5],
         identify[0],
@@ -1028,6 +1028,12 @@ def _u32_from(block: list[int], base: int, address: int) -> int:
     return (block[index] << 16) | block[index + 1]
 
 
+def _connected_valves_u32_from(block: list[int], base: int, address: int) -> int:
+    """Valve discovery pairs 70/71 and 72/73 carry the low word first."""
+    index = address - base
+    return block[index] | (block[index + 1] << 16)
+
+
 def _u16_from(block: list[int], base: int, address: int) -> int:
     return int(block[address - base])
 
@@ -1059,6 +1065,14 @@ def _read_input_u32(
     address = profile.input_address(key)
     base, block = _find_block_for_address(blocks, address)
     return _u32_from(block, base, address)
+
+
+def _read_input_valves_u32(
+    blocks: dict[int, list[int]], profile: RegisterProfile, key: str
+) -> int:
+    address = profile.input_address(key)
+    base, block = _find_block_for_address(blocks, address)
+    return _connected_valves_u32_from(block, base, address)
 
 
 def _read_input_i16(

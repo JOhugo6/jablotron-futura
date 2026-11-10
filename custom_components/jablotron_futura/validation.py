@@ -217,12 +217,13 @@ def _button_field_key(zone_index: int, button_index: int, field_key: str) -> str
 def _group_indexed_bits(
     bitmap: int, group_size: int, max_groups: int
 ) -> dict[int, tuple[int, ...]]:
+    """DIP bits 1–3 select the zone; higher bits select its equipment number."""
     grouped: dict[int, list[int]] = {}
     for bit_index in range(group_size * max_groups):
         if not bitmap & (1 << bit_index):
             continue
-        zone_index = (bit_index // group_size) + 1
-        within_zone_index = (bit_index % group_size) + 1
+        zone_index = (bit_index % max_groups) + 1
+        within_zone_index = (bit_index // max_groups) + 1
         grouped.setdefault(zone_index, []).append(within_zone_index)
     return {zone_index: tuple(indexes) for zone_index, indexes in grouped.items()}
 

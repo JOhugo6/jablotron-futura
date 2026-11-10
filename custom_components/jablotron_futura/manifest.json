@@ -8,5 +8,5 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/JOhugo6/jablotron-futura/issues",
   "requirements": ["pymodbus>=3.11.1,<3.14.0"],
-  "version": "0.3.1"
+  "version": "0.3.2"
 }
