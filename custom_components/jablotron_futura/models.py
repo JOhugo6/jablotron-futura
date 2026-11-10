@@ -987,7 +987,7 @@ def default_v3_options() -> dict[str, Any]:
             "read_interval_ms": 10000,
             "write_interval_ms": 12000,
             "scan_interval_s": 5,
-            "stale_after_s": 120,
+            "stale_after_s": DEFAULT_STALE_AFTER_S,
             "write_on_change_only": True,
             "force_resync_every_s": 300,
             "log_level_bridge": "normal",
@@ -1104,14 +1104,23 @@ def validate_v3_options(options: Mapping[str, Any]) -> dict[str, str]:
     return errors
 
 
-def load_v3_options(options: Mapping[str, Any]) -> dict[str, Any]:
-    """Read only the canonical model; invalid saved state requires repair."""
+def with_source_age_default(options: Mapping[str, Any]) -> dict[str, Any]:
+    """Copy options and fill only an absent source-age limit in runtime."""
     from copy import deepcopy
 
-    errors = validate_v3_options(options)
+    result = deepcopy(dict(options))
+    if isinstance(runtime := result.get("runtime"), dict):
+        runtime.setdefault(CONF_STALE_AFTER_S, DEFAULT_STALE_AFTER_S)
+    return result
+
+
+def load_v3_options(options: Mapping[str, Any]) -> dict[str, Any]:
+    """Read canonical options; invalid explicit saved state requires repair."""
+    result = with_source_age_default(options)
+    errors = validate_v3_options(result)
     if errors:
         raise ValueError("invalid_v3_configuration", errors)
-    return deepcopy(dict(options))
+    return result
 
 
 def v3_sensor_configs(options: Mapping[str, Any]) -> list[ExternalSensorSlotConfig]:

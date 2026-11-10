@@ -198,14 +198,14 @@
       },
       "runtime": {
         "title": "Intervaly a bridge",
-        "description": "Bridge povoluje pouze senzorové zápisy; tlačítka jsou nezávislá. Readback a standardní čtení mají oddělené intervaly. Watchdog musí být alespoň interval zápisu zaokrouhlený nahoru na sekundy.",
+        "description": "Bridge povoluje pouze senzorové zápisy; tlačítka jsou nezávislá. Readback a standardní čtení mají oddělené intervaly. Watchdog musí být alespoň interval zápisu zaokrouhlený nahoru na sekundy. Nejvyšší stáří posledního hlášení zdroje se zadává v sekundách; výchozí hodnota pro nové nebo chybějící nastavení je 60 minut = 3600 s. Již uložené hodnoty se zachovávají: pro změnu například ze 120 s na 60 minut uložte 3600. Tento limit nemění interval zápisů; unknown/unavailable a neplatné hodnoty se invalidují při vyhodnocení.",
         "data": {
           "bridge_enabled": "Povolit zápisy senzorů",
           "write_on_change_only": "Zapisovat pouze změny (mimo watchdog)",
           "read_interval_ms": "Interval zpětného čtení (ms)",
           "write_interval_ms": "Nejkratší interval zápisu (ms)",
           "scan_interval_s": "Interval standardního čtení (s)",
-          "stale_after_s": "Zdroj zastará po (s)",
+          "stale_after_s": "Nejvyšší stáří zdroje (s)",
           "force_resync_every_s": "Obnovení watchdogem (s)",
           "log_level_bridge": "Protokolování",
           "action": "Další krok"
@@ -393,14 +393,14 @@
       },
       "runtime": {
         "title": "Intervaly a bridge",
-        "description": "Bridge povoluje pouze senzorové zápisy; tlačítka jsou nezávislá. Readback a standardní čtení mají oddělené intervaly. Watchdog musí být alespoň interval zápisu zaokrouhlený nahoru na sekundy.",
+        "description": "Bridge povoluje pouze senzorové zápisy; tlačítka jsou nezávislá. Readback a standardní čtení mají oddělené intervaly. Watchdog musí být alespoň interval zápisu zaokrouhlený nahoru na sekundy. Nejvyšší stáří posledního hlášení zdroje se zadává v sekundách; výchozí hodnota pro nové nebo chybějící nastavení je 60 minut = 3600 s. Již uložené hodnoty se zachovávají: pro změnu například ze 120 s na 60 minut uložte 3600. Tento limit nemění interval zápisů; unknown/unavailable a neplatné hodnoty se invalidují při vyhodnocení.",
         "data": {
           "bridge_enabled": "Povolit zápisy senzorů",
           "write_on_change_only": "Zapisovat pouze změny (mimo watchdog)",
           "read_interval_ms": "Interval zpětného čtení (ms)",
           "write_interval_ms": "Nejkratší interval zápisu (ms)",
           "scan_interval_s": "Interval standardního čtení (s)",
-          "stale_after_s": "Zdroj zastará po (s)",
+          "stale_after_s": "Nejvyšší stáří zdroje (s)",
           "force_resync_every_s": "Obnovení watchdogem (s)",
           "log_level_bridge": "Protokolování",
           "action": "Další krok"

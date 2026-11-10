@@ -198,14 +198,14 @@
       },
       "runtime": {
         "title": "Intervals and bridge",
-        "description": "Bridge enables sensor writes only; buttons are independent. Readback and standard polling have separate intervals. Watchdog must be at least the write interval rounded up to seconds.",
+        "description": "Bridge enables sensor writes only; buttons are independent. Readback and standard polling have separate intervals. Watchdog must be at least the write interval rounded up to seconds. Maximum age of the last source report is entered in seconds; the default for a new or missing setting is 60 minutes = 3600 s. Saved values are preserved: to change, for example, 120 s to 60 minutes, save 3600. This limit does not change the write interval; unknown/unavailable and invalid values are invalidated on evaluation.",
         "data": {
           "bridge_enabled": "Enable sensor write-back",
           "write_on_change_only": "Write only changed values (except watchdog)",
           "read_interval_ms": "Readback interval (ms)",
           "write_interval_ms": "Minimum write interval (ms)",
           "scan_interval_s": "Standard polling interval (s)",
-          "stale_after_s": "Source expires after (s)",
+          "stale_after_s": "Maximum source age (s)",
           "force_resync_every_s": "Watchdog refresh (s)",
           "log_level_bridge": "Logging",
           "action": "Next action"
@@ -393,14 +393,14 @@
       },
       "runtime": {
         "title": "Intervals and bridge",
-        "description": "Bridge enables sensor writes only; buttons are independent. Readback and standard polling have separate intervals. Watchdog must be at least the write interval rounded up to seconds.",
+        "description": "Bridge enables sensor writes only; buttons are independent. Readback and standard polling have separate intervals. Watchdog must be at least the write interval rounded up to seconds. Maximum age of the last source report is entered in seconds; the default for a new or missing setting is 60 minutes = 3600 s. Saved values are preserved: to change, for example, 120 s to 60 minutes, save 3600. This limit does not change the write interval; unknown/unavailable and invalid values are invalidated on evaluation.",
         "data": {
           "bridge_enabled": "Enable sensor write-back",
           "write_on_change_only": "Write only changed values (except watchdog)",
           "read_interval_ms": "Readback interval (ms)",
           "write_interval_ms": "Minimum write interval (ms)",
           "scan_interval_s": "Standard polling interval (s)",
-          "stale_after_s": "Source expires after (s)",
+          "stale_after_s": "Maximum source age (s)",
           "force_resync_every_s": "Watchdog refresh (s)",
           "log_level_bridge": "Logging",
           "action": "Next action"

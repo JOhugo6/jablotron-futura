@@ -14,7 +14,7 @@ from .const import DOMAIN
 from . import coordinator as transport
 from .identity import hardware_fingerprint, identity_token, normalize_host
 from .flow_labels import LABELS as FIELD_LABELS
-from .models import default_v3_options, validate_v3_options
+from .models import default_v3_options, validate_v3_options, with_source_age_default
 from .validation import (
     metric_unit_is_valid,
     normalize_metric_value,
@@ -295,7 +295,9 @@ class V3Wizard:
     def _initialize(self, entry: Any = None, *, lightweight: bool = False) -> None:
         self._entry = entry
         self._lightweight = lightweight
-        self._draft = deepcopy(dict(entry.options)) if entry else default_v3_options()
+        self._draft = (
+            with_source_age_default(entry.options) if entry else default_v3_options()
+        )
         self._original = deepcopy(self._draft)
         self._connection = {
             "host": "",
