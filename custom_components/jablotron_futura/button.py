@@ -98,7 +98,7 @@ class FuturaExternalButton(FuturaEntity, ButtonEntity):
             and not self.coordinator._frozen
             and not self.coordinator.config.get("migration_needs_repair")
             and buttons
-            and buttons.states[str(self._slot_index)]["state"] in ("ready", "active")
+            and buttons.can_activate(self._slot_index)
         )
 
     async def async_press(self) -> None:

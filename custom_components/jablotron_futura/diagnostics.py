@@ -90,6 +90,10 @@ SAFE_TEXT = {
     "reconnect",
     "source_changed",
     "watchdog",
+    "low_word_first",
+    "registration_failed",
+    "ha_activation_deadline",
+    "futura_raw_register",
 }
 
 # Only schema-owned keys are readable. Migration archives and future payloads
@@ -123,6 +127,9 @@ exhaust_damper_ids button_ids alfa_index zone_index supply_identify exhaust_iden
 external_sensor_present external_button_present alfa_live_values external_sensor_live_values
 mb_address ntc_temperature fact_device_id variant_raw fut_config_raw modes_bits_raw
 errors_bits_raw warnings_bits_raw emergency_shutdown_active last_poll_at
+status_words status_word_order status_flags valid active_bits known_active_bits
+unknown_bits unknown_bits_mask
+registered registration_pending registration_generation countdown_source
 has_internal_heater has_coolbreeze_cooling has_coolbreeze_heating has_bypass
 heating_available cooling_available bypass_available filter_wear power heat_recovering
 heating_power air_flow fan_power_supply_raw fan_power_exhaust_raw fan_rpm_supply

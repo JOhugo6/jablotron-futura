@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Mapping
+from typing import Any
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -16,37 +18,21 @@ from .models import FuturaConfigEntry
 from .sensor_visibility import eligible_metrics
 from .sensor_names import external_sensor_name_translation
 from .models import eligible_button_members
+from .status import (
+    ERROR_BITS,
+    WARNING_BITS,
+    STATUS_BITS,
+    STATUS_REGISTERS,
+    status_details,
+    valid_status_value,
+)
 
 PARALLEL_UPDATES = 0
 
-ERROR_BITS = {
-    0: "Ambient sensor error",
-    1: "Indoor sensor error",
-    2: "Fresh air sensor error",
-    3: "Waste air sensor error",
-    4: "Supply fan error",
-    5: "Extract fan error",
-    6: "Heat exchanger communication error",
-    7: "Heat exchanger damper error",
-    8: "IO board communication error",
-    9: "Supply fan blocked",
-    10: "Extract fan blocked",
-    11: "CoolBreeze communication error",
-    12: "CoolBreeze outdoor unit error",
-}
 
-WARNING_BITS = {
-    0: "Filter not initialized",
-    1: "Filter heavily clogged",
-    2: "Filter used too long",
-    3: "RTC battery low",
-    8: "Low outdoor temperature warning",
-    9: "Supply zone configuration warning",
-    10: "Extract zone configuration warning",
-    11: "Emergency shutdown",
-    12: "SuperBreeze communication error",
-    13: "General SuperBreeze error",
-}
+def _status_value(data: Any, key: str) -> int | None:
+    value = data.get(key) if isinstance(data, Mapping) else None
+    return value if valid_status_value(value) else None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -72,11 +58,17 @@ class FuturaBitBinarySensor(FuturaEntity, BinarySensorEntity):
             description.key,
         )
         self.description = description
+        del self._attr_name
+        self._attr_translation_key = description.key
 
     @property
-    def is_on(self) -> bool:
-        value = int(self.coordinator.data.get(self.description.source_key, 0) or 0)
-        return bool((value >> self.description.bit) & 1)
+    def available(self) -> bool:
+        return super().available and self.is_on is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        value = _status_value(self.coordinator.data, self.description.source_key)
+        return None if value is None else bool((value >> self.description.bit) & 1)
 
 
 class FuturaSummaryBinarySensor(FuturaEntity, BinarySensorEntity):
@@ -93,10 +85,36 @@ class FuturaSummaryBinarySensor(FuturaEntity, BinarySensorEntity):
     ) -> None:
         super().__init__(entry.runtime_data.coordinator, entry, name, key)
         self._source_key = source_key
+        del self._attr_name
+        self._attr_translation_key = key
 
     @property
-    def is_on(self) -> bool:
-        return bool(int(self.coordinator.data.get(self._source_key, 0) or 0))
+    def available(self) -> bool:
+        return super().available and self.is_on is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        value = _status_value(self.coordinator.data, self._source_key)
+        return None if value is None else bool(value)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        data = self.coordinator.data
+        value = _status_value(data, self._source_key)
+        details = status_details(value, STATUS_BITS[self._source_key])
+        address = STATUS_REGISTERS[self._source_key]
+        words = data.get("status_words", {}) if isinstance(data, Mapping) else {}
+        return {
+            **super().extra_state_attributes,
+            **{
+                key: details[key]
+                for key in ("valid", "raw", "known_active_bits", "unknown_bits")
+            },
+            "raw_words": words.get(self._source_key)
+            if isinstance(words, Mapping)
+            else None,
+            "input_registers": [address, address + 1],
+        }
 
 
 async def async_setup_entry(
@@ -109,11 +127,14 @@ async def async_setup_entry(
         FuturaSummaryBinarySensor(
             entry, "any_warning", "Any warning", "warnings_bits_raw"
         ),
-        FuturaSummaryBinarySensor(
+        FuturaBitBinarySensor(
             entry,
-            "emergency_shutdown_active",
-            "Emergency shutdown active",
-            "emergency_shutdown_active",
+            BitEntityDescription(
+                key="emergency_shutdown_active",
+                name="Emergency shutdown active",
+                source_key="warnings_bits_raw",
+                bit=11,
+            ),
         ),
     ]
 
@@ -196,5 +217,6 @@ def _build_futura_button_active_entities(
     return [
         FuturaSlotBinarySensor(entry, slot, "button")
         for slot in range(1, 9)
-        if "active" in eligible_button_members(entry.runtime_data.coordinator.config, slot)
+        if "active"
+        in eligible_button_members(entry.runtime_data.coordinator.config, slot)
     ]

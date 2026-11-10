@@ -9,6 +9,7 @@ import asyncio
 import time
 import logging
 from typing import Any
+from collections.abc import Callable
 
 from pymodbus.client import AsyncModbusTcpClient
 
@@ -48,6 +49,7 @@ from .models import ButtonActivationState, DeviceIdentity, FuturaConfigEntry
 from .profiles import RegisterProfile, get_profile
 from .models import load_v3_options
 from .readback import decode_sensor, decode_button
+from .status import STATUS_BITS, STATUS_REGISTERS, decode_status_words, status_details
 from .transport import (
     acquire_transport,
     release_transport,
@@ -383,7 +385,10 @@ class FuturaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             transport = await self._get_transport()
             result = await transport.request(self.unit_id, method, address, **kwargs)
+            changed_session = self.reconnect_generation != transport.generation
             self.reconnect_generation = transport.generation
+            if changed_session and self.buttons and self.buttons.has_configured_slots:
+                self._readback_wake.set()
             return result
         except TransportError as err:
             raise UpdateFailed(str(err)) from err
@@ -439,8 +444,11 @@ class FuturaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 translation_key="identity_mismatch",
             )
             raise UpdateFailed("identity_mismatch")
+        changed_session = self.reconnect_generation != transport.generation
         self._verified_generation = verified_generation
         self.reconnect_generation = transport.generation
+        if changed_session and self.buttons and self.buttons.has_configured_slots:
+            self._readback_wake.set()
 
     async def _write_holding_register(self, address: int, value: int) -> None:
         generation = self.generation
@@ -453,15 +461,26 @@ class FuturaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
     async def _write_holding_registers(
-        self, address: int, values: list[int], *, cleanup: bool = False
+        self,
+        address: int,
+        values: list[int],
+        *,
+        cleanup: bool = False,
+        extra_guard: Callable[[], None] | None = None,
     ) -> None:
         generation = self.generation
         await self._verify_identity()
+
+        def guard() -> None:
+            self._write_guard(generation, cleanup)
+            if extra_guard:
+                extra_guard()
+
         await self._request(
             "write_registers",
             address,
             values=values,
-            guard=lambda: self._write_guard(generation, cleanup),
+            guard=guard,
         )
 
     async def async_write_external_sensor_block(
@@ -482,15 +501,95 @@ class FuturaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._readback_wake.set()
 
     async def async_write_external_button_block(
-        self, slot_index: int, payload: list[int], *, cleanup: bool = False
+        self,
+        slot_index: int,
+        payload: list[int],
+        *,
+        cleanup: bool = False,
+        extra_guard: Callable[[], None] | None = None,
     ) -> None:
-        """Write one external button payload block."""
-        decode_button(payload)
-        cfg = self.config["button_slots"][str(slot_index)]
-        if not cleanup and not (cfg["enabled"] and cfg["ownership"] == "ha_control"):
+        """Release known runtime ownership with one stop-and-unregister frame."""
+        if (
+            payload != [0, 0, 0, 0]
+            or any(type(value) is not int for value in payload)
+            or not cleanup
+        ):
+            raise ValueError("invalid_button_release")
+        if not self.buttons or str(slot_index) not in self.buttons.owned:
             raise UpdateFailed("slot_not_owned")
         address, _count = self.profile.external_button_block(slot_index)
-        await self._write_holding_registers(address, payload, cleanup=cleanup)
+        await self._write_holding_registers(
+            address, payload, cleanup=True, extra_guard=extra_guard
+        )
+        self._readback_wake.set()
+
+    def _require_button_owner(self, slot_index: int) -> dict[str, Any]:
+        cfg = self.config["button_slots"].get(str(slot_index))
+        if not cfg or not cfg["enabled"] or cfg["ownership"] != "ha_control":
+            raise UpdateFailed("slot_not_owned")
+        return cfg
+
+    async def async_register_external_button(
+        self,
+        slot_index: int,
+        mode: int,
+        *,
+        extra_guard: Callable[[], None] | None = None,
+    ) -> None:
+        """Declare stored HA ownership without writing timer or active."""
+        cfg = self._require_button_owner(slot_index)
+        if type(mode) is not int or mode != int(cfg["button_mode"] == "digestor"):
+            raise ValueError("invalid_button_mode")
+        address, _count = self.profile.external_button_block(slot_index)
+        await self._write_holding_registers(address, [1, mode], extra_guard=extra_guard)
+        self._readback_wake.set()
+
+    async def async_command_external_button(
+        self,
+        slot_index: int,
+        payload: list[int],
+        *,
+        cleanup: bool = False,
+        extra_guard: Callable[[], None] | None = None,
+    ) -> None:
+        """Write only complete timer/active uint16 fields, never registration."""
+        cfg = self._require_button_owner(slot_index)
+        if cleanup:
+            valid = payload == [0, 0] and all(type(value) is int for value in payload)
+        else:
+            valid = (
+                len(payload) == 2
+                and all(type(value) is int for value in payload)
+                and 1 <= payload[0] <= cfg["max_active_seconds"]
+                and payload[1] == 1
+            )
+        if not valid:
+            raise ValueError("invalid_button_command")
+
+        def guard() -> None:
+            if not cleanup and (
+                not self.buttons or not self.buttons.registration_known(str(slot_index))
+            ):
+                raise UpdateFailed("button_unavailable")
+            if extra_guard:
+                extra_guard()
+
+        address, _count = self.profile.external_button_block(slot_index)
+        await self._write_holding_registers(
+            address + 2, payload, cleanup=cleanup, extra_guard=guard
+        )
+        self._readback_wake.set()
+
+    async def async_read_external_button(self, slot_index: int) -> dict[str, Any]:
+        address, count = self.profile.external_button_block(slot_index)
+        decoded = decode_button(await self._read_holding_registers(address, count))
+        result = decoded | {
+            "available": True,
+            "timestamp": dt_util.utcnow().isoformat(),
+            "read_monotonic": time.monotonic(),
+        }
+        self.button_readback[str(slot_index)] = result
+        return result
         self._readback_wake.set()
 
     async def async_set_vent_mode(self, value: int) -> None:
@@ -626,15 +725,15 @@ class FuturaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         data["fut_config_raw"] = _read_input_u16(
             input_blocks, self.profile, "fut_config_raw"
         )
-        data["modes_bits_raw"] = _read_input_u32(
-            input_blocks, self.profile, "modes_bits_raw"
-        )
-        data["errors_bits_raw"] = _read_input_u32(
-            input_blocks, self.profile, "errors_bits_raw"
-        )
-        data["warnings_bits_raw"] = _read_input_u32(
-            input_blocks, self.profile, "warnings_bits_raw"
-        )
+        data["status_words"] = {}
+        for key in STATUS_REGISTERS:
+            words = _read_input_status_words(input_blocks, self.profile, key)
+            data["status_words"][key] = words
+            data[key] = decode_status_words(words)
+        data["status_word_order"] = "low_word_first"
+        data["status_flags"] = {
+            key: status_details(data[key], STATUS_BITS[key]) for key in STATUS_REGISTERS
+        }
         identity = _build_device_identity_from_input_blocks(
             input_blocks,
             self.profile,
@@ -1065,6 +1164,18 @@ def _read_input_u32(
     address = profile.input_address(key)
     base, block = _find_block_for_address(blocks, address)
     return _u32_from(block, base, address)
+
+
+def _read_input_status_words(
+    blocks: dict[int, list[int]], profile: RegisterProfile, key: str
+) -> list[int]:
+    """Keep status word order separate from identity and timestamp parsing."""
+    address = profile.input_address(key)
+    if STATUS_REGISTERS.get(key) != address:
+        raise ValueError("not_status_register")
+    base, block = _find_block_for_address(blocks, address)
+    offset = address - base
+    return block[offset : offset + 2]
 
 
 def _read_input_valves_u32(

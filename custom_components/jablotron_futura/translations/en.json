@@ -644,7 +644,7 @@
         "name": "External sensor {slot} floor temperature"
       },
       "external_button_timer": {
-        "name": "External button {slot} remaining time"
+        "name": "External button {slot} Futura timer"
       },
       "named_external_temperature": {
         "name": "{slot_name} temperature"
@@ -657,6 +657,18 @@
       },
       "named_external_floor_temperature": {
         "name": "{slot_name} floor temperature"
+      },
+      "ha_external_button_timer": {
+        "name": "External button {slot} HA request remaining time",
+        "state_attributes": {
+          "countdown_source": {
+            "name": "Countdown source",
+            "state": {
+              "ha_activation_deadline": "Home Assistant request",
+              "futura_raw_register": "Futura register"
+            }
+          }
+        }
       }
     },
     "binary_sensor": {
@@ -668,6 +680,169 @@
       },
       "named_external_sensor_present": {
         "name": "{slot_name} present"
+      },
+      "error_bit_0": {
+        "name": "Ambient sensor error"
+      },
+      "error_bit_1": {
+        "name": "Indoor sensor error"
+      },
+      "error_bit_2": {
+        "name": "Fresh air sensor error"
+      },
+      "error_bit_3": {
+        "name": "Waste air sensor error"
+      },
+      "error_bit_4": {
+        "name": "Supply fan error"
+      },
+      "error_bit_5": {
+        "name": "Extract fan error"
+      },
+      "error_bit_6": {
+        "name": "Heat exchanger communication error"
+      },
+      "error_bit_7": {
+        "name": "Heat exchanger damper error"
+      },
+      "error_bit_8": {
+        "name": "IO board communication error"
+      },
+      "error_bit_9": {
+        "name": "Supply fan blocked"
+      },
+      "error_bit_10": {
+        "name": "Extract fan blocked"
+      },
+      "error_bit_11": {
+        "name": "CoolBreeze communication error"
+      },
+      "error_bit_12": {
+        "name": "CoolBreeze outdoor unit error"
+      },
+      "error_bit_13": {
+        "name": "Supply airflow below declared value"
+      },
+      "error_bit_14": {
+        "name": "Extract airflow below declared value"
+      },
+      "error_bit_15": {
+        "name": "CoolBreeze detected; duct analysis required"
+      },
+      "error_bit_16": {
+        "name": "VarioBreeze configuration changed; duct analysis required (bit 16)"
+      },
+      "error_bit_17": {
+        "name": "VarioBreeze configuration changed; duct analysis required (bit 17)"
+      },
+      "error_bit_18": {
+        "name": "Indoor humidity above limit"
+      },
+      "error_bit_19": {
+        "name": "CoolBreeze temperature sensor error"
+      },
+      "error_bit_20": {
+        "name": "Fan control failed"
+      },
+      "error_bit_21": {
+        "name": "Fresh air temperature too low"
+      },
+      "warning_bit_0": {
+        "name": "Filter not initialized"
+      },
+      "warning_bit_1": {
+        "name": "Filter heavily clogged"
+      },
+      "warning_bit_2": {
+        "name": "Filter used too long"
+      },
+      "warning_bit_3": {
+        "name": "RTC battery low"
+      },
+      "warning_bit_4": {
+        "name": "Supply fan speed too high"
+      },
+      "warning_bit_5": {
+        "name": "Extract fan speed too high"
+      },
+      "warning_bit_8": {
+        "name": "Low outdoor temperature warning"
+      },
+      "warning_bit_9": {
+        "name": "Supply zone configuration warning"
+      },
+      "warning_bit_10": {
+        "name": "Extract zone configuration warning"
+      },
+      "warning_bit_11": {
+        "name": "Emergency shutdown"
+      },
+      "warning_bit_12": {
+        "name": "SuperBreeze communication error"
+      },
+      "warning_bit_13": {
+        "name": "General SuperBreeze error"
+      },
+      "warning_bit_14": {
+        "name": "Power supply error"
+      },
+      "warning_bit_15": {
+        "name": "VarioBreeze damper error"
+      },
+      "warning_bit_16": {
+        "name": "Indoor humidity above limit"
+      },
+      "warning_bit_17": {
+        "name": "Regular service inspection due"
+      },
+      "emergency_shutdown_active": {
+        "name": "Emergency shutdown active"
+      },
+      "any_error": {
+        "name": "Any error",
+        "state_attributes": {
+          "valid": {
+            "name": "Valid bitmap format"
+          },
+          "raw": {
+            "name": "Status bitmap"
+          },
+          "known_active_bits": {
+            "name": "Known active bits"
+          },
+          "unknown_bits": {
+            "name": "Unknown or reserved bits"
+          },
+          "raw_words": {
+            "name": "Input register words"
+          },
+          "input_registers": {
+            "name": "Input register addresses"
+          }
+        }
+      },
+      "any_warning": {
+        "name": "Any warning",
+        "state_attributes": {
+          "valid": {
+            "name": "Valid bitmap format"
+          },
+          "raw": {
+            "name": "Status bitmap"
+          },
+          "known_active_bits": {
+            "name": "Known active bits"
+          },
+          "unknown_bits": {
+            "name": "Unknown or reserved bits"
+          },
+          "raw_words": {
+            "name": "Input register words"
+          },
+          "input_registers": {
+            "name": "Input register addresses"
+          }
+        }
       }
     },
     "button": {
